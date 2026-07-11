@@ -4,7 +4,7 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 const RootLayout = () => (
     <>
-        <div className="h-dvh w-dvw bg-background font-sans transition-colors duration-300">
+        <div className="h-dvh w-dvw bg-background font-sans">
             <Header />
             <Outlet />
         </div>
