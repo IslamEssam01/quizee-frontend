@@ -3,42 +3,35 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreateUserMutation } from "@/hooks/useCreateUserMutation";
-import { errorToast } from "@/lib/utils";
+import { useLoginMutation } from "@/hooks/useLoginMutation";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/register")({
+export const Route = createFileRoute("/login")({
     component: Register,
 });
 
 function Register() {
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
     const PasswordFieldIcon = showPassword ? EyeOff : Eye;
-    const ConfirmPasswordFieldIcon = showConfirmPassword ? EyeOff : Eye;
-
-    const createUserMutation = useCreateUserMutation();
+    const loginMutation = useLoginMutation();
 
     const [email, setEmail] = useState("");
-    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
 
     const navigate = useNavigate();
 
-    const isDisabled = createUserMutation.isPending;
+    const isDisabled = loginMutation.isPending;
 
     return (
         <div className="mx-auto flex max-w-sm flex-col items-center gap-8 pt-40">
             <div className="flex w-full flex-col justify-start">
                 <h1 className="text-2xl font-semibold text-foreground">
-                    Create account
+                    Sign in
                 </h1>
                 <span className="text-sm text-muted-foreground">
-                    Get started with Quizee
+                    Welcome back to Quizee
                 </span>
             </div>
             <Card className="w-full">
@@ -46,19 +39,14 @@ function Register() {
                     <form
                         onSubmit={async (e) => {
                             e.preventDefault();
-                            if (password !== confirmPassword) {
-                                errorToast("Passwords do not match");
-                                return;
-                            }
-                            createUserMutation.mutate(
+                            loginMutation.mutate(
                                 {
-                                    username,
                                     email,
                                     password,
                                 },
                                 {
                                     onSuccess: () => {
-                                        navigate({ to: "/login" });
+                                        navigate({ to: "/" });
                                     },
                                 },
                             );
@@ -85,28 +73,6 @@ function Register() {
                         </Field>
                         <Field>
                             <FieldLabel
-                                htmlFor="username"
-                                className="text-sm font-medium"
-                            >
-                                Username
-                            </FieldLabel>
-                            <InputField
-                                placeholder="Username"
-                                id="username"
-                                type="text"
-                                required
-                                autoComplete="username"
-                                maxLength={50}
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                disabled={isDisabled}
-                            />
-                            <span className="text-xs text-muted-foreground">
-                                Maximum 50 characters
-                            </span>
-                        </Field>
-                        <Field>
-                            <FieldLabel
                                 htmlFor="password"
                                 className="text-sm font-medium"
                             >
@@ -118,7 +84,7 @@ function Register() {
                                     id="password"
                                     type={showPassword ? "text" : "password"}
                                     required
-                                    autoComplete="new-password"
+                                    autoComplete="current-password"
                                     minLength={8}
                                     value={password}
                                     onChange={(e) =>
@@ -133,51 +99,14 @@ function Register() {
                                     }}
                                 />
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                                Minimum 8 characters
-                            </span>
                         </Field>
-                        <Field>
-                            <FieldLabel
-                                htmlFor="confirmPassword"
-                                className="text-sm font-medium"
-                            >
-                                Confirm Password
-                            </FieldLabel>
-                            <div className="relative">
-                                <InputField
-                                    placeholder="••••••••"
-                                    id="confirmPassword"
-                                    type={
-                                        showConfirmPassword
-                                            ? "text"
-                                            : "password"
-                                    }
-                                    required
-                                    autoComplete="new-password"
-                                    minLength={8}
-                                    value={confirmPassword}
-                                    onChange={(e) =>
-                                        setConfirmPassword(e.target.value)
-                                    }
-                                    disabled={isDisabled}
-                                />
-                                <ConfirmPasswordFieldIcon
-                                    className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
-                                    onClick={() => {
-                                        setShowConfirmPassword((prev) => !prev);
-                                    }}
-                                />
-                            </div>
-                        </Field>
-
                         <Button
                             variant="default"
                             className="h-10 w-full text-sm font-medium"
                             type="submit"
                             disabled={isDisabled}
                         >
-                            Create Account
+                            Sign in
                             {isDisabled && <Spinner data-icon="inline-end" />}
                         </Button>
                     </form>
@@ -185,12 +114,12 @@ function Register() {
             </Card>
             <div className="flex w-full items-center justify-center gap-2 text-sm text-muted-foreground">
                 <span className="text-sm">
-                    Already have an account?{" "}
+                    Don't have an account?{" "}
                     <Link
-                        to="/login"
+                        to="/register"
                         className="text-base font-medium text-primary underline-offset-2 hover:underline"
                     >
-                        Sign in
+                        Sign up
                     </Link>
                 </span>
             </div>
