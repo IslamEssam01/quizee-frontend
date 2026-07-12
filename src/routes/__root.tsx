@@ -1,4 +1,5 @@
 import Header from "@/components/header";
+import { Toaster } from "@/components/ui/sonner";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
@@ -9,6 +10,7 @@ const RootLayout = () => (
             <Outlet />
         </div>
         <TanStackRouterDevtools />
+        <Toaster position="top-center" duration={1000} />
     </>
 );
 
