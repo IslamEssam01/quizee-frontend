@@ -1,5 +1,5 @@
 import { fetchAPI } from "@/lib/auth";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const currentUserQueryOptions = queryOptions({
     queryKey: ["currentUser"],
@@ -8,9 +8,11 @@ export const currentUserQueryOptions = queryOptions({
 });
 
 export function useCurrentUser() {
-    const { data } = useSuspenseQuery(currentUserQueryOptions);
+    const { data, isPending, isError } = useQuery(currentUserQueryOptions);
 
     return {
         currentUser: data,
+        isPending,
+        isError,
     };
 }

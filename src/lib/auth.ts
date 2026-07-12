@@ -12,18 +12,23 @@ export function clearAccessToken() {
     inMemoryAccessToken = null;
 }
 
+async function parseJSON(res: Response) {
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+}
+
 async function rawFetch(endpoint: string, options?: RequestInit) {
     try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
             ...options,
         });
         if (!res.ok) {
-            const data = await res.json();
+            const data = await parseJSON(res);
             throw new Error(
-                data.detail || "An error occurred while fetching the API.",
+                data?.detail || "An error occurred while fetching the API.",
             );
         }
-        return res.json();
+        return parseJSON(res);
     } catch (error) {
         console.error("Fetch API error:", error);
         throw new Error("An error occurred while fetching the API.", {
@@ -93,11 +98,11 @@ export async function fetchAPI(
     }
 
     if (!res.ok) {
-        const data = await res.json();
+        const data = await parseJSON(res);
         throw new Error(
-            data.detail || "An error occurred while fetching the API.",
+            data?.detail || "An error occurred while fetching the API.",
         );
     }
 
-    return res.json();
+    return parseJSON(res);
 }
