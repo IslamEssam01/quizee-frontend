@@ -5,9 +5,11 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 const RootLayout = () => (
     <>
-        <div className="h-dvh w-dvw bg-background font-sans">
+        <div className="flex h-dvh w-dvw flex-col overflow-hidden bg-background font-sans">
             <Header />
-            <Outlet />
+            <div className="flex-1 overflow-auto">
+                <Outlet />
+            </div>
         </div>
         <TanStackRouterDevtools />
         <Toaster position="top-center" duration={1000} />
