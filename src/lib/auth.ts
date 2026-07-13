@@ -1,5 +1,16 @@
 let inMemoryAccessToken: string | null = null;
 
+const authChannel = new BroadcastChannel("auth");
+authChannel.onmessage = (event) => {
+    if (event.data?.type === "token-refreshed") {
+        setAccessToken(event.data.token);
+    } else if (event.data?.type === "token-cleared") {
+        // Set the underlying value directly rather than calling
+        // clearAccessToken(), which would re-broadcast and loop forever.
+        inMemoryAccessToken = null;
+    }
+};
+
 export function setAccessToken(token: string) {
     inMemoryAccessToken = token;
 }
@@ -10,6 +21,7 @@ export function getAccessToken() {
 
 export function clearAccessToken() {
     inMemoryAccessToken = null;
+    authChannel.postMessage({ type: "token-cleared" });
 }
 
 async function parseJSON(res: Response) {
@@ -37,20 +49,24 @@ async function rawFetch(endpoint: string, options?: RequestInit) {
     }
 }
 
-let refreshPromise: Promise<void> | null = null;
-
 async function refreshAccessToken() {
-    refreshPromise ??= (async () => {
+    const tokenBeforeLock = getAccessToken();
+
+    return navigator.locks.request("refresh-token-lock", async () => {
+        // Another tab (or an in-flight call in this tab) may have already
+        // refreshed while we were waiting for the lock. Skip the network
+        // call and reuse that token instead of racing the refresh cookie.
+        if (getAccessToken() !== tokenBeforeLock) {
+            return;
+        }
+
         const data = await rawFetch("/auth/refresh", {
             method: "POST",
             credentials: "include",
         });
         setAccessToken(data.access_token);
-    })().finally(() => {
-        refreshPromise = null;
+        authChannel.postMessage({ type: "token-refreshed", token: data.access_token });
     });
-
-    return refreshPromise;
 }
 
 export async function fetchAPI(
