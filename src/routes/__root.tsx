@@ -12,7 +12,7 @@ const RootLayout = () => (
             </div>
         </div>
         <TanStackRouterDevtools />
-        <Toaster position="top-center" duration={1000} />
+        <Toaster position="top-center" duration={1500} />
     </>
 );
 

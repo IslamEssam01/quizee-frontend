@@ -8,7 +8,7 @@ export function InputField({
     return (
         <Input
             className={cn(
-                "h-10 rounded-md border border-border  text-sm transition-all placeholder:text-muted-foreground focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:duration-300 focus-visible:outline-none",
+                "h-10 rounded-md border border-border text-sm transition-all placeholder:text-muted-foreground focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:duration-300 focus-visible:outline-none bg-card!",
                 className,
             )}
             {...props}
