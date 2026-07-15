@@ -43,9 +43,11 @@ async function rawFetch(endpoint: string, options?: RequestInit) {
         return parseJSON(res);
     } catch (error) {
         console.error("Fetch API error:", error);
-        throw new Error("An error occurred while fetching the API.", {
-            cause: error,
-        });
+        if (error instanceof Error) {
+            throw new Error(error.message, {
+                cause: error,
+            });
+        }
     }
 }
 
@@ -65,7 +67,10 @@ async function refreshAccessToken() {
             credentials: "include",
         });
         setAccessToken(data.access_token);
-        authChannel.postMessage({ type: "token-refreshed", token: data.access_token });
+        authChannel.postMessage({
+            type: "token-refreshed",
+            token: data.access_token,
+        });
     });
 }
 
