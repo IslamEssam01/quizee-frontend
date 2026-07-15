@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LogOut, Moon, Sun, User } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useLogoutMutation } from "@/hooks/useLogoutMutation";
@@ -24,26 +24,37 @@ export default function Header() {
                     <Button
                         variant="ghost"
                         size="icon-lg"
-                        className="text-muted-foreground hover:text-foreground dark:hover:bg-muted"
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted"
                         onClick={toggleTheme}
                     >
                         {theme === "dark" ? <Sun /> : <Moon />}
                     </Button>
                     {currentUser && (
-                        <Button
-                            variant="ghost"
-                            size="icon-lg"
-                            className="text-muted-foreground hover:text-foreground dark:hover:bg-muted"
-                            onClick={() =>
-                                logoutMutation.mutate(undefined, {
-                                    onSuccess: () => {
-                                        navigate({ to: "/" });
-                                    },
-                                })
-                            }
-                        >
-                            <LogOut />
-                        </Button>
+                        <>
+                            <Link to="/profile">
+                                <Button
+                                    variant="ghost"
+                                    size="icon-lg"
+                                    className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                                >
+                                    <User />
+                                </Button>
+                            </Link>
+                            <Button
+                                variant="ghost"
+                                size="icon-lg"
+                                className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                                onClick={() =>
+                                    logoutMutation.mutate(undefined, {
+                                        onSuccess: () => {
+                                            navigate({ to: "/" });
+                                        },
+                                    })
+                                }
+                            >
+                                <LogOut />
+                            </Button>
+                        </>
                     )}
                 </div>
             </div>
