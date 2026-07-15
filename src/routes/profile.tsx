@@ -9,12 +9,14 @@ import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { InputField } from "@/components/inputField";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { useUpdateUserMutation } from "@/hooks/useUpdateUserMutation";
 import { errorToast } from "@/lib/utils";
 import { useChangePasswordMutation } from "@/hooks/useChangePasswordMutation";
 import { useDeleteUserMutation } from "@/hooks/useDeleteUserMutation";
+import { ConfirmDialog } from "@/components/confirmDialog";
 
 export const Route = createFileRoute("/profile")({
     loader: async () => {
@@ -41,6 +43,13 @@ function RouteComponent() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
+    const [logoutAllSessions, setLogoutAllSessions] = useState(true);
+
+    const [isPersonalInfoConfirmOpen, setIsPersonalInfoConfirmOpen] =
+        useState(false);
+    const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
     const CurrentPasswordFieldIcon = showCurrentPassword ? EyeOff : Eye;
     const NewPasswordFieldIcon = showNewPassword ? EyeOff : Eye;
     const ConfirmNewPasswordFieldIcon = showConfirmNewPassword ? EyeOff : Eye;
@@ -58,7 +67,12 @@ function RouteComponent() {
         return null;
     }
 
-    // TODO: disabled buttons if not dirty and delegate all to a confirmation modal
+    const isPersonalInfoDirty =
+        username !== currentUser.username || email !== currentUser.email;
+
+    const isPasswordFormFilled =
+        !!currentPassword && !!newPassword && !!confirmNewPassword;
+
     return (
         <div className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-10 sm:px-6">
             <div className="flex items-center gap-2">
@@ -86,9 +100,9 @@ function RouteComponent() {
             <Card className="w-full">
                 <CardContent>
                     <form
-                        onSubmit={async (e) => {
+                        onSubmit={(e) => {
                             e.preventDefault();
-                            updateUserMutation.mutate({ username, email });
+                            setIsPersonalInfoConfirmOpen(true);
                         }}
                         className="flex flex-col gap-4"
                     >
@@ -138,7 +152,7 @@ function RouteComponent() {
                                 variant="default"
                                 className="h-10 w-fit text-sm font-medium"
                                 type="submit"
-                                disabled={isDisabled}
+                                disabled={isDisabled || !isPersonalInfoDirty}
                             >
                                 Save Changes
                                 {isDisabled && (
@@ -152,26 +166,13 @@ function RouteComponent() {
             <Card className="w-full">
                 <CardContent>
                     <form
-                        onSubmit={async (e) => {
+                        onSubmit={(e) => {
                             e.preventDefault();
                             if (newPassword !== confirmNewPassword) {
                                 errorToast("Passwords do not match");
                                 return;
                             }
-                            changePasswordMutation.mutate(
-                                {
-                                    current_password: currentPassword,
-                                    new_password: newPassword,
-                                    logout_all_sessions: true, // TODO: the modal should check for it
-                                },
-                                {
-                                    onSuccess: () => {
-                                        setCurrentPassword("");
-                                        setNewPassword("");
-                                        setConfirmNewPassword("");
-                                    },
-                                },
-                            );
+                            setIsPasswordConfirmOpen(true);
                         }}
                         className="flex flex-col gap-4"
                     >
@@ -277,12 +278,28 @@ function RouteComponent() {
                                 />
                             </div>
                         </Field>
+                        <Field orientation="horizontal">
+                            <Checkbox
+                                id="logout-all-sessions"
+                                checked={logoutAllSessions}
+                                onCheckedChange={(checked) =>
+                                    setLogoutAllSessions(checked)
+                                }
+                                disabled={isDisabled}
+                            />
+                            <FieldLabel
+                                htmlFor="logout-all-sessions"
+                                className="text-sm font-normal"
+                            >
+                                Log out of all other sessions
+                            </FieldLabel>
+                        </Field>
                         <div className="flex w-full justify-end">
                             <Button
                                 variant="default"
                                 className="h-10 w-fit text-sm font-medium"
                                 type="submit"
-                                disabled={isDisabled}
+                                disabled={isDisabled || !isPasswordFormFilled}
                             >
                                 Save Changes
                                 {isDisabled && (
@@ -297,9 +314,9 @@ function RouteComponent() {
             <Card className="w-full">
                 <CardContent>
                     <form
-                        onSubmit={async (e) => {
+                        onSubmit={(e) => {
                             e.preventDefault();
-                            deleteUserMutation.mutate();
+                            setIsDeleteConfirmOpen(true);
                         }}
                         className="flex flex-col gap-4"
                     >
@@ -333,6 +350,67 @@ function RouteComponent() {
                     </form>
                 </CardContent>
             </Card>
+
+            <ConfirmDialog
+                open={isPersonalInfoConfirmOpen}
+                onOpenChange={setIsPersonalInfoConfirmOpen}
+                title="Save changes to profile?"
+                description="Your username and email will be updated."
+                confirmLabel="Save Changes"
+                isLoading={updateUserMutation.isPending}
+                onConfirm={() => {
+                    updateUserMutation.mutate(
+                        { username, email },
+                        {
+                            onSuccess: () =>
+                                setIsPersonalInfoConfirmOpen(false),
+                        },
+                    );
+                }}
+            />
+
+            <ConfirmDialog
+                open={isPasswordConfirmOpen}
+                onOpenChange={setIsPasswordConfirmOpen}
+                title="Change your password?"
+                description={
+                    logoutAllSessions
+                        ? "You will be logged out of all other sessions."
+                        : "Your other sessions will remain logged in."
+                }
+                confirmLabel="Change Password"
+                isLoading={changePasswordMutation.isPending}
+                onConfirm={() => {
+                    changePasswordMutation.mutate(
+                        {
+                            current_password: currentPassword,
+                            new_password: newPassword,
+                            logout_all_sessions: logoutAllSessions,
+                        },
+                        {
+                            onSuccess: () => {
+                                setCurrentPassword("");
+                                setNewPassword("");
+                                setConfirmNewPassword("");
+                                setIsPasswordConfirmOpen(false);
+                            },
+                        },
+                    );
+                }}
+            />
+
+            <ConfirmDialog
+                open={isDeleteConfirmOpen}
+                onOpenChange={setIsDeleteConfirmOpen}
+                title="Delete account?"
+                description="Permanently remove your account and all quiz data. This cannot be undone."
+                confirmLabel="Delete account"
+                variant="destructive"
+                isLoading={deleteUserMutation.isPending}
+                onConfirm={() => {
+                    deleteUserMutation.mutate();
+                }}
+            />
         </div>
     );
 }
