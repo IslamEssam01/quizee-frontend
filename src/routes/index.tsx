@@ -18,5 +18,8 @@ export const Route = createFileRoute("/")({
 
 function RouteComponent() {
     const { currentUser } = useCurrentUser();
+    if (!currentUser) {
+        return null;
+    }
     return <div>Hello {currentUser.username}!</div>;
 }

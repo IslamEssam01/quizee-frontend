@@ -1,9 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { errorToast } from "@/lib/utils";
 import { toast } from "sonner";
 import { fetchAPI, setAccessToken } from "@/lib/auth";
+import { currentUserQueryOptions } from "@/hooks/useCurrentUser";
 
 export function useLoginMutation() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (userData: { email: string; password: string }) =>
             fetchAPI(
@@ -18,8 +20,14 @@ export function useLoginMutation() {
                 },
                 true,
             ),
-        onSuccess: (data: { access_token: string }) => {
+        onSuccess: async (data: { access_token: string }) => {
             setAccessToken(data.access_token);
+            await queryClient.cancelQueries({
+                queryKey: currentUserQueryOptions.queryKey,
+            });
+            await queryClient.invalidateQueries({
+                queryKey: currentUserQueryOptions.queryKey,
+            });
             toast.success("Logged in successfully!");
         },
         onError: (error: Error) => {

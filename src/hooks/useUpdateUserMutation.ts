@@ -16,9 +16,9 @@ export function useUpdateUserMutation() {
                 },
                 body: JSON.stringify(userData),
             }),
-        onSuccess: () => {
+        onSuccess: async () => {
             toast.success("User updated successfully!");
-            queryClient.invalidateQueries({
+            await queryClient.invalidateQueries({
                 queryKey: currentUserQueryOptions.queryKey,
             });
         },
