@@ -22,12 +22,14 @@ export default function Header() {
 
                 <div className="flex items-center gap-2">
                     {currentUser && (
-                        <Button
-                            variant="ghost"
-                            className="text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                            My Quizzes
-                        </Button>
+                        <Link to="/my-quizzes">
+                            <Button
+                                variant="ghost"
+                                className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                My Quizzes
+                            </Button>
+                        </Link>
                     )}
                     <Button
                         variant="ghost"

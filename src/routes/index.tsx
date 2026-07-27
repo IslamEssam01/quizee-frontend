@@ -1,13 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pagination } from "@/components/pagination";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useQuizzes } from "@/hooks/useQuizzes";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 const QUIZZES_PER_PAGE = 6;
 
@@ -78,51 +77,14 @@ function RouteComponent() {
             )}
 
             {!isPending && pageCount > 1 && (
-                <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                        {rangeStart}-{rangeEnd} of {total}
-                    </span>
-                    <div className="flex items-center gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:bg-muted hover:text-foreground"
-                            disabled={page === 1}
-                            onClick={() => setPage((prev) => prev - 1)}
-                        >
-                            <ChevronLeft />
-                        </Button>
-                        {Array.from({ length: pageCount }, (_, i) => i + 1).map(
-                            (pageNumber) => (
-                                <Button
-                                    key={pageNumber}
-                                    variant={
-                                        pageNumber === page
-                                            ? "default"
-                                            : "ghost"
-                                    }
-                                    size="icon-sm"
-                                    className={cn(
-                                        pageNumber !== page &&
-                                            "text-muted-foreground hover:bg-muted hover:text-foreground",
-                                    )}
-                                    onClick={() => setPage(pageNumber)}
-                                >
-                                    {pageNumber}
-                                </Button>
-                            ),
-                        )}
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:bg-muted hover:text-foreground"
-                            disabled={page === pageCount}
-                            onClick={() => setPage((prev) => prev + 1)}
-                        >
-                            <ChevronRight />
-                        </Button>
-                    </div>
-                </div>
+                <Pagination
+                    page={page}
+                    pageCount={pageCount}
+                    rangeStart={rangeStart}
+                    rangeEnd={rangeEnd}
+                    total={total}
+                    onPageChange={setPage}
+                />
             )}
 
             {!currentUser && (
