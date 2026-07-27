@@ -1,6 +1,20 @@
 import { fetchAPI } from "@/lib/auth";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
+export type QuestionType = "mcq" | "T OR F";
+
+export type QuizAnswer = {
+    text: string;
+    is_correct: boolean;
+};
+
+export type QuizQuestion = {
+    text: string;
+    type: QuestionType;
+    position: number;
+    answers: QuizAnswer[];
+};
+
 export type QuizDetail = {
     id: number;
     title: string;
@@ -8,7 +22,7 @@ export type QuizDetail = {
     visibility: string;
     pass_threshold: number;
     owner_id: number;
-    questions: unknown[];
+    questions: QuizQuestion[];
 };
 
 export function quizQueryOptions(quizId: number) {

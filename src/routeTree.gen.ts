@@ -18,6 +18,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-pass
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
+import { Route as QuizzesQuizIdEditRouteImport } from './routes/quizzes/$quizId_.edit'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -63,6 +64,11 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const QuizzesQuizIdEditRoute = QuizzesQuizIdEditRouteImport.update({
+  id: '/quizzes/$quizId_/edit',
+  path: '/quizzes/$quizId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/quizzes/$quizId': typeof QuizzesQuizIdRoute
+  '/quizzes/$quizId/edit': typeof QuizzesQuizIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/quizzes/$quizId': typeof QuizzesQuizIdRoute
+  '/quizzes/$quizId/edit': typeof QuizzesQuizIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_auth/register': typeof AuthRegisterRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/quizzes/$quizId': typeof QuizzesQuizIdRoute
+  '/quizzes/$quizId_/edit': typeof QuizzesQuizIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/quizzes/$quizId'
+    | '/quizzes/$quizId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/quizzes/$quizId'
+    | '/quizzes/$quizId/edit'
   id:
     | '__root__'
     | '/'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/_auth/register'
     | '/_auth/reset-password'
     | '/quizzes/$quizId'
+    | '/quizzes/$quizId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -136,6 +148,7 @@ export interface RootRouteChildren {
   MyQuizzesRoute: typeof MyQuizzesRoute
   ProfileRoute: typeof ProfileRoute
   QuizzesQuizIdRoute: typeof QuizzesQuizIdRoute
+  QuizzesQuizIdEditRoute: typeof QuizzesQuizIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -203,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/quizzes/$quizId_/edit': {
+      id: '/quizzes/$quizId_/edit'
+      path: '/quizzes/$quizId/edit'
+      fullPath: '/quizzes/$quizId/edit'
+      preLoaderRoute: typeof QuizzesQuizIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -230,6 +250,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyQuizzesRoute: MyQuizzesRoute,
   ProfileRoute: ProfileRoute,
   QuizzesQuizIdRoute: QuizzesQuizIdRoute,
+  QuizzesQuizIdEditRoute: QuizzesQuizIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -64,12 +64,17 @@ function RouteComponent() {
             ) : (
                 <div className="divide-y divide-border overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
                     {quizzes?.map((quiz) => (
-                        <Link
+                        <div
                             key={quiz.id}
-                            to="/quizzes/$quizId"
-                            params={{ quizId: String(quiz.id) }}
-                            className="group flex items-center justify-between gap-4 px-4 py-4 hover:bg-muted/50"
+                            className="group relative flex items-center justify-between gap-4 px-4 py-4 hover:bg-muted/50"
                         >
+                            <Link
+                                to="/quizzes/$quizId"
+                                params={{ quizId: String(quiz.id) }}
+                                className="absolute inset-0"
+                            >
+                                <span className="sr-only">{quiz.title}</span>
+                            </Link>
                             <div className="flex flex-col gap-1">
                                 <span className="text-base font-semibold text-foreground group-hover:text-primary">
                                     {quiz.title}
@@ -91,16 +96,21 @@ function RouteComponent() {
                                     </span>
                                     attempts
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className="text-muted-foreground hover:bg-muted hover:text-foreground"
-                                    onClick={(e) => e.preventDefault()}
+                                <Link
+                                    to="/quizzes/$quizId/edit"
+                                    params={{ quizId: String(quiz.id) }}
+                                    className="relative z-10"
                                 >
-                                    <Pencil />
-                                </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    >
+                                        <Pencil />
+                                    </Button>
+                                </Link>
                             </div>
-                        </Link>
+                        </div>
                     ))}
                 </div>
             )}

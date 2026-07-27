@@ -87,10 +87,12 @@ function RouteComponent() {
                     </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                    <Button variant="outline">
-                        <Pencil data-icon="inline-start" />
-                        Edit
-                    </Button>
+                    <Link to="/quizzes/$quizId/edit" params={{ quizId }}>
+                        <Button variant="outline">
+                            <Pencil data-icon="inline-start" />
+                            Edit
+                        </Button>
+                    </Link>
                     <Button variant="default">
                         <Eye data-icon="inline-start" />
                         Preview
