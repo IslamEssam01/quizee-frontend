@@ -51,10 +51,12 @@ function RouteComponent() {
                         {total} {total === 1 ? "quiz" : "quizzes"}
                     </span>
                 </div>
-                <Button variant="default">
-                    <Plus data-icon="inline-start" />
-                    Create quiz
-                </Button>
+                <Link to="/quizzes/create">
+                    <Button variant="default">
+                        <Plus data-icon="inline-start" />
+                        Create quiz
+                    </Button>
+                </Link>
             </div>
 
             {isPending ? (

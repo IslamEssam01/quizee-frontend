@@ -4,27 +4,15 @@ import {
     currentUserQueryOptions,
     useCurrentUser,
 } from "@/hooks/useCurrentUser";
-import { quizQueryOptions, useQuiz } from "@/hooks/useQuiz";
-import { useUpdateQuizMutation } from "@/hooks/useUpdateQuizMutation";
+import { useCreateQuizMutation } from "@/hooks/useCreateQuizMutation";
 import { queryClient } from "@/lib/queryClient";
-import {
-    createFileRoute,
-    Link,
-    redirect,
-    useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 
-export const Route = createFileRoute("/quizzes/$quizId_/edit")({
-    loader: async ({ params }) => {
+export const Route = createFileRoute("/quizzes/create")({
+    loader: async () => {
         try {
-            const user = await queryClient.ensureQueryData(
-                currentUserQueryOptions,
-            );
-            await queryClient.ensureQueryData(
-                quizQueryOptions(Number(params.quizId)),
-            );
-            return user;
+            return await queryClient.ensureQueryData(currentUserQueryOptions);
         } catch {
             throw redirect({ to: "/login" });
         }
@@ -33,20 +21,18 @@ export const Route = createFileRoute("/quizzes/$quizId_/edit")({
 });
 
 function RouteComponent() {
-    const { quizId } = Route.useParams();
     const { currentUser } = useCurrentUser();
-    const { quiz } = useQuiz(Number(quizId));
-    const updateQuizMutation = useUpdateQuizMutation(Number(quizId));
+    const createQuizMutation = useCreateQuizMutation();
     const navigate = useNavigate();
 
-    if (!currentUser || !quiz) {
+    if (!currentUser) {
         return null;
     }
 
     return (
         <div className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-10 sm:px-6">
             <div className="flex items-center gap-2">
-                <Link to="/quizzes/$quizId" params={{ quizId }}>
+                <Link to="/my-quizzes">
                     <Button
                         variant="ghost"
                         size="icon-lg"
@@ -56,23 +42,19 @@ function RouteComponent() {
                     </Button>
                 </Link>
                 <span className="text-xl font-semibold text-foreground">
-                    Edit quiz
+                    Create quiz
                 </span>
             </div>
 
             <QuizForm
-                initialTitle={quiz.title}
-                initialDescription={quiz.description}
-                initialPassThreshold={quiz.pass_threshold}
-                initialQuestions={quiz.questions}
-                isPending={updateQuizMutation.isPending}
+                isPending={createQuizMutation.isPending}
                 submitLabel="Save & get link"
                 onSubmit={(payload) => {
-                    updateQuizMutation.mutate(payload, {
-                        onSuccess: () => {
+                    createQuizMutation.mutate(payload, {
+                        onSuccess: (quiz) => {
                             navigate({
                                 to: "/quizzes/$quizId",
-                                params: { quizId },
+                                params: { quizId: String(quiz.id) },
                             });
                         },
                     });
