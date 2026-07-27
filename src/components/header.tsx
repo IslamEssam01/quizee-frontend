@@ -21,6 +21,14 @@ export default function Header() {
                 </Link>
 
                 <div className="flex items-center gap-2">
+                    {currentUser && (
+                        <Button
+                            variant="ghost"
+                            className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                            My Quizzes
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon-lg"
@@ -29,7 +37,7 @@ export default function Header() {
                     >
                         {theme === "dark" ? <Sun /> : <Moon />}
                     </Button>
-                    {currentUser && (
+                    {currentUser ? (
                         <>
                             <Link to="/profile">
                                 <Button
@@ -55,6 +63,15 @@ export default function Header() {
                                 <LogOut />
                             </Button>
                         </>
+                    ) : (
+                        <Link to="/login">
+                            <Button
+                                variant="ghost"
+                                className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                Sign in
+                            </Button>
+                        </Link>
                     )}
                 </div>
             </div>
