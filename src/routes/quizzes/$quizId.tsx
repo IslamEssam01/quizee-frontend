@@ -7,10 +7,24 @@ import {
     useCurrentUser,
 } from "@/hooks/useCurrentUser";
 import { useQuiz, type AttemptSummary } from "@/hooks/useQuiz";
+import { useDeleteQuizMutation } from "@/hooks/useDeleteQuizMutation";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { ChevronLeft, Copy, Eye, ExternalLink, Pencil } from "lucide-react";
+import {
+    createFileRoute,
+    Link,
+    redirect,
+    useNavigate,
+} from "@tanstack/react-router";
+import {
+    ChevronLeft,
+    Copy,
+    Eye,
+    ExternalLink,
+    Pencil,
+    Trash2,
+} from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/quizzes/$quizId")({
     loader: async () => {
@@ -77,6 +91,9 @@ function RouteComponent() {
     const { quizId } = Route.useParams();
     const { currentUser } = useCurrentUser();
     const { quiz, isPending } = useQuiz(Number(quizId));
+    const deleteQuizMutation = useDeleteQuizMutation(Number(quizId));
+    const navigate = useNavigate();
+    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
     if (!currentUser) {
         return null;
@@ -131,6 +148,46 @@ function RouteComponent() {
                         <Eye data-icon="inline-start" />
                         Preview
                     </Button>
+                    {isConfirmingDelete ? (
+                        <>
+                            <span className="text-sm text-muted-foreground">
+                                Delete?
+                            </span>
+                            <Button
+                                variant="destructive"
+                                className="bg-destructive! text-white"
+                                disabled={deleteQuizMutation.isPending}
+                                onClick={() =>
+                                    deleteQuizMutation.mutate(undefined, {
+                                        onSuccess: () => {
+                                            navigate({ to: "/my-quizzes" });
+                                        },
+                                    })
+                                }
+                            >
+                                Yes, delete
+                                {deleteQuizMutation.isPending && (
+                                    <Spinner data-icon="inline-end" />
+                                )}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                disabled={deleteQuizMutation.isPending}
+                                onClick={() => setIsConfirmingDelete(false)}
+                            >
+                                Cancel
+                            </Button>
+                        </>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="icon-lg"
+                            className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                            onClick={() => setIsConfirmingDelete(true)}
+                        >
+                            <Trash2 />
+                        </Button>
+                    )}
                 </div>
             </div>
 
