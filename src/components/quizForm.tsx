@@ -9,37 +9,20 @@ import type { QuestionType, QuizQuestion } from "@/hooks/useQuiz";
 import { errorToast } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Check, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type OptionDraft = {
-    key: string;
+    id: number;
     text: string;
     is_correct: boolean;
 };
 
 type QuestionDraft = {
-    key: string;
+    id: number;
     text: string;
     type: QuestionType;
     options: OptionDraft[];
 };
-
-function blankOptions(count: number): OptionDraft[] {
-    return Array.from({ length: count }, () => ({
-        key: crypto.randomUUID(),
-        text: "",
-        is_correct: false,
-    }));
-}
-
-function blankQuestion(): QuestionDraft {
-    return {
-        key: crypto.randomUUID(),
-        text: "",
-        type: "mcq",
-        options: blankOptions(4),
-    };
-}
 
 export type QuizFormPayload = {
     title: string;
@@ -58,6 +41,25 @@ type QuizFormProps = {
     onSubmit: (payload: QuizFormPayload) => void;
 };
 
+function blankDraftQuestion(startId: number): {
+    question: QuestionDraft;
+    lastId: number;
+} {
+    let id = startId;
+    const options: OptionDraft[] = Array.from({ length: 4 }, () => ({
+        id: id++,
+        text: "",
+        is_correct: false,
+    }));
+    const question: QuestionDraft = {
+        id: id++,
+        text: "",
+        type: "mcq",
+        options,
+    };
+    return { question, lastId: id - 1 };
+}
+
 export function QuizForm({
     initialTitle = "",
     initialDescription = "",
@@ -67,33 +69,68 @@ export function QuizForm({
     submitLabel,
     onSubmit,
 }: QuizFormProps) {
-    const [title, setTitle] = useState(initialTitle);
-    const [description, setDescription] = useState(initialDescription);
-    const [passThreshold, setPassThreshold] = useState(initialPassThreshold);
-    const [questions, setQuestions] = useState<QuestionDraft[]>(() =>
-        initialQuestions?.length
-            ? initialQuestions.map((question) => ({
-                  key: crypto.randomUUID(),
+    const initialDraft = initialQuestions?.length
+        ? {
+              questions: initialQuestions.map((question) => ({
+                  id: question.id,
                   text: question.text,
                   type: question.type,
                   options: question.answers.map((answer) => ({
-                      key: crypto.randomUUID(),
+                      id: answer.id,
                       text: answer.text,
                       is_correct: answer.is_correct,
                   })),
-              }))
-            : [blankQuestion()],
+              })),
+              lastId: Math.max(
+                  0,
+                  ...initialQuestions.flatMap((question) => [
+                      question.id,
+                      ...question.answers.map((answer) => answer.id),
+                  ]),
+              ),
+          }
+        : (() => {
+              const { question, lastId } = blankDraftQuestion(1);
+              return { questions: [question], lastId };
+          })();
+
+    const [title, setTitle] = useState(initialTitle);
+    const [description, setDescription] = useState(initialDescription);
+    const [passThreshold, setPassThreshold] = useState(initialPassThreshold);
+    const [questions, setQuestions] = useState<QuestionDraft[]>(
+        initialDraft.questions,
     );
+    const nextId = useRef(initialDraft.lastId + 1);
+    function newId() {
+        return nextId.current++;
+    }
+
+    function blankOptions(count: number): OptionDraft[] {
+        return Array.from({ length: count }, () => ({
+            id: newId(),
+            text: "",
+            is_correct: false,
+        }));
+    }
+
+    function blankQuestion(): QuestionDraft {
+        return {
+            id: newId(),
+            text: "",
+            type: "mcq",
+            options: blankOptions(4),
+        };
+    }
 
     const isDisabled = isPending;
 
     function updateQuestion(
-        key: string,
+        id: number,
         updater: (question: QuestionDraft) => QuestionDraft,
     ) {
         setQuestions((prev) =>
             prev.map((question) =>
-                question.key === key ? updater(question) : question,
+                question.id === id ? updater(question) : question,
             ),
         );
     }
@@ -102,72 +139,62 @@ export function QuizForm({
         setQuestions((prev) => [...prev, blankQuestion()]);
     }
 
-    function removeQuestion(key: string) {
-        setQuestions((prev) =>
-            prev.filter((question) => question.key !== key),
-        );
+    function removeQuestion(id: number) {
+        setQuestions((prev) => prev.filter((question) => question.id !== id));
     }
 
-    function setQuestionType(key: string, type: QuestionType) {
-        updateQuestion(key, (question) => ({
+    function setQuestionType(id: number, type: QuestionType) {
+        updateQuestion(id, (question) => ({
             ...question,
             type,
             options:
                 type === "T OR F"
                     ? [
-                          {
-                              key: crypto.randomUUID(),
-                              text: "True",
-                              is_correct: false,
-                          },
-                          {
-                              key: crypto.randomUUID(),
-                              text: "False",
-                              is_correct: false,
-                          },
+                          { id: newId(), text: "True", is_correct: false },
+                          { id: newId(), text: "False", is_correct: false },
                       ]
                     : blankOptions(4),
         }));
     }
 
-    function addOption(key: string) {
-        updateQuestion(key, (question) => ({
+    function addOption(id: number) {
+        updateQuestion(id, (question) => ({
             ...question,
             options: [
                 ...question.options,
-                { key: crypto.randomUUID(), text: "", is_correct: false },
+                { id: newId(), text: "", is_correct: false },
             ],
         }));
     }
 
-    function removeOption(questionKey: string, optionKey: string) {
-        updateQuestion(questionKey, (question) => ({
+    function removeOption(questionId: number, optionId: number) {
+        updateQuestion(questionId, (question) => ({
             ...question,
             options: question.options.filter(
-                (option) => option.key !== optionKey,
+                (option) => option.id !== optionId,
             ),
         }));
     }
 
-    function setCorrectOption(questionKey: string, optionKey: string) {
-        updateQuestion(questionKey, (question) => ({
+    function setCorrectOption(questionId: number, optionId: number) {
+        updateQuestion(questionId, (question) => ({
             ...question,
             options: question.options.map((option) => ({
                 ...option,
-                is_correct: option.key === optionKey,
+                is_correct: option.id === optionId,
             })),
         }));
     }
 
     function updateOptionText(
-        questionKey: string,
-        optionKey: string,
+        questionId: number,
+        optionId: number,
         text: string,
     ) {
-        updateQuestion(questionKey, (question) => ({
+        updateQuestion(questionId, (question) => ({
             ...question,
             options: question.options.map((option) =>
-                option.key === optionKey ? { ...option, text } : option,
+                option.id === optionId ? { ...option, text } : option,
             ),
         }));
     }
@@ -187,10 +214,12 @@ export function QuizForm({
             description,
             pass_threshold: passThreshold,
             questions: questions.map((question, index) => ({
+                id: question.id,
                 text: question.text,
                 type: question.type,
                 position: index + 1,
                 answers: question.options.map((option) => ({
+                    id: option.id,
                     text: option.text,
                     is_correct: option.is_correct,
                 })),
@@ -275,7 +304,7 @@ export function QuizForm({
                 </span>
 
                 {questions.map((question, index) => (
-                    <Card key={question.key} className="w-full">
+                    <Card key={question.id} className="w-full">
                         <CardContent className="flex flex-col gap-4">
                             <div className="flex items-start gap-3">
                                 <span className="pt-2 text-sm text-muted-foreground">
@@ -285,7 +314,7 @@ export function QuizForm({
                                     value={question.text}
                                     placeholder="Question text"
                                     onChange={(e) =>
-                                        updateQuestion(question.key, (q) => ({
+                                        updateQuestion(question.id, (q) => ({
                                             ...q,
                                             text: e.target.value,
                                         }))
@@ -303,7 +332,7 @@ export function QuizForm({
                                         isDisabled || questions.length === 1
                                     }
                                     onClick={() =>
-                                        removeQuestion(question.key)
+                                        removeQuestion(question.id)
                                     }
                                 >
                                     <Trash2 />
@@ -315,7 +344,7 @@ export function QuizForm({
                                     type="button"
                                     disabled={isDisabled}
                                     onClick={() =>
-                                        setQuestionType(question.key, "mcq")
+                                        setQuestionType(question.id, "mcq")
                                     }
                                     className={cn(
                                         "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
@@ -331,7 +360,7 @@ export function QuizForm({
                                     disabled={isDisabled}
                                     onClick={() =>
                                         setQuestionType(
-                                            question.key,
+                                            question.id,
                                             "T OR F",
                                         )
                                     }
@@ -347,15 +376,15 @@ export function QuizForm({
                             </div>
 
                             <RadioGroup
-                                value={
+                                value={String(
                                     question.options.find(
                                         (o) => o.is_correct,
-                                    )?.key
-                                }
+                                    )?.id ?? "",
+                                )}
                                 onValueChange={(value) =>
                                     setCorrectOption(
-                                        question.key,
-                                        value as string,
+                                        question.id,
+                                        Number(value as string),
                                     )
                                 }
                                 className="flex flex-col gap-2"
@@ -363,11 +392,11 @@ export function QuizForm({
                                 {question.type === "T OR F"
                                     ? question.options.map((option) => (
                                           <label
-                                              key={option.key}
+                                              key={option.id}
                                               className="flex items-center gap-2 text-sm text-foreground"
                                           >
                                               <RadioGroupItem
-                                                  value={option.key}
+                                                  value={String(option.id)}
                                                   disabled={isDisabled}
                                               />
                                               {option.text}
@@ -376,11 +405,13 @@ export function QuizForm({
                                     : question.options.map(
                                           (option, optionIndex) => (
                                               <div
-                                                  key={option.key}
+                                                  key={option.id}
                                                   className="flex items-center gap-2"
                                               >
                                                   <RadioGroupItem
-                                                      value={option.key}
+                                                      value={String(
+                                                          option.id,
+                                                      )}
                                                       disabled={isDisabled}
                                                   />
                                                   <InputField
@@ -388,8 +419,8 @@ export function QuizForm({
                                                       placeholder={`Option ${optionIndex + 1}`}
                                                       onChange={(e) =>
                                                           updateOptionText(
-                                                              question.key,
-                                                              option.key,
+                                                              question.id,
+                                                              option.id,
                                                               e.target.value,
                                                           )
                                                       }
@@ -409,8 +440,8 @@ export function QuizForm({
                                                       }
                                                       onClick={() =>
                                                           removeOption(
-                                                              question.key,
-                                                              option.key,
+                                                              question.id,
+                                                              option.id,
                                                           )
                                                       }
                                                   >
@@ -425,7 +456,7 @@ export function QuizForm({
                                 <button
                                     type="button"
                                     disabled={isDisabled}
-                                    onClick={() => addOption(question.key)}
+                                    onClick={() => addOption(question.id)}
                                     className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
                                 >
                                     <Plus className="size-4" />

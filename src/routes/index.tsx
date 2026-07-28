@@ -64,7 +64,7 @@ function RouteComponent() {
                                     </span>
                                     <span>
                                         <span className="font-semibold text-foreground">
-                                            0
+                                            {quiz.attempts_count}
                                         </span>{" "}
                                         attempts
                                     </span>

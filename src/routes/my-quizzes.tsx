@@ -94,7 +94,7 @@ function RouteComponent() {
                                 </div>
                                 <div className="flex w-20 flex-col items-end text-sm text-muted-foreground">
                                     <span className="font-semibold text-foreground">
-                                        0
+                                        {quiz.attempts_count}
                                     </span>
                                     attempts
                                 </div>

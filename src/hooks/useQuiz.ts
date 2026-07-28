@@ -4,15 +4,27 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 export type QuestionType = "mcq" | "T OR F";
 
 export type QuizAnswer = {
+    id: number;
     text: string;
     is_correct: boolean;
 };
 
 export type QuizQuestion = {
+    id: number;
     text: string;
     type: QuestionType;
     position: number;
     answers: QuizAnswer[];
+};
+
+export type AttemptSummary = {
+    id: number;
+    user_id: number | null;
+    taker_name: string | null;
+    started_at: string;
+    taken_at: string | null;
+    score: number | null;
+    passed: boolean | null;
 };
 
 export type QuizDetail = {
@@ -23,6 +35,9 @@ export type QuizDetail = {
     pass_threshold: number;
     owner_id: number;
     questions: QuizQuestion[];
+    attempts_count: number;
+    pass_rate?: number;
+    attempts_summary?: AttemptSummary[];
 };
 
 export function quizQueryOptions(quizId: number) {

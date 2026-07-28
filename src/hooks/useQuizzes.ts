@@ -7,6 +7,7 @@ export type Quiz = {
     description: string;
     pass_threshold: number;
     questions: unknown[];
+    attempts_count: number;
 };
 
 type PaginatedQuizzes = {
