@@ -68,7 +68,7 @@ function RouteComponent() {
                     {quizzes?.map((quiz) => (
                         <div
                             key={quiz.id}
-                            className="group relative flex items-center justify-between gap-4 px-4 py-4 hover:bg-muted/50"
+                            className="group relative flex items-start justify-between gap-4 px-4 py-4 hover:bg-muted/50 sm:items-center"
                         >
                             <Link
                                 to="/quizzes/$quizId"
@@ -77,41 +77,43 @@ function RouteComponent() {
                             >
                                 <span className="sr-only">{quiz.title}</span>
                             </Link>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-base font-semibold text-foreground group-hover:text-primary">
-                                    {quiz.title}
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                    {quiz.description}
-                                </span>
+                            <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-6">
+                                <div className="flex min-w-0 flex-col gap-1 sm:flex-1">
+                                    <span className="text-base font-semibold text-foreground group-hover:text-primary">
+                                        {quiz.title}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {quiz.description}
+                                    </span>
+                                </div>
+                                <div className="ml-auto self-end flex shrink-0 items-center gap-4 sm:self-auto sm:ml-0">
+                                    <div className="flex items-baseline gap-1 text-sm text-muted-foreground">
+                                        <span className="font-semibold text-foreground">
+                                            {quiz.questions.length}
+                                        </span>
+                                        questions
+                                    </div>
+                                    <div className="flex items-baseline gap-1 text-sm text-muted-foreground">
+                                        <span className="font-semibold text-foreground">
+                                            {quiz.attempts_count}
+                                        </span>
+                                        attempts
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-6">
-                                <div className="flex w-20 flex-col items-end text-sm text-muted-foreground">
-                                    <span className="font-semibold text-foreground">
-                                        {quiz.questions.length}
-                                    </span>
-                                    questions
-                                </div>
-                                <div className="flex w-20 flex-col items-end text-sm text-muted-foreground">
-                                    <span className="font-semibold text-foreground">
-                                        {quiz.attempts_count}
-                                    </span>
-                                    attempts
-                                </div>
-                                <Link
-                                    to="/quizzes/$quizId/edit"
-                                    params={{ quizId: String(quiz.id) }}
-                                    className="relative z-10"
+                            <Link
+                                to="/quizzes/$quizId/edit"
+                                params={{ quizId: String(quiz.id) }}
+                                className="relative z-10 shrink-0"
+                            >
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-muted-foreground hover:bg-muted hover:text-foreground"
                                 >
-                                    <Button
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        className="text-muted-foreground hover:bg-muted hover:text-foreground"
-                                    >
-                                        <Pencil />
-                                    </Button>
-                                </Link>
-                            </div>
+                                    <Pencil />
+                                </Button>
+                            </Link>
                         </div>
                     ))}
                 </div>
