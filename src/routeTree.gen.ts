@@ -15,6 +15,7 @@ import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as QuizzesCreateRouteImport } from './routes/quizzes/create'
 import { Route as QuizzesQuizIdRouteImport } from './routes/quizzes/$quizId'
+import { Route as QQuizIdRouteImport } from './routes/q.$quizId'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
@@ -48,6 +49,11 @@ const QuizzesCreateRoute = QuizzesCreateRouteImport.update({
 const QuizzesQuizIdRoute = QuizzesQuizIdRouteImport.update({
   id: '/quizzes/$quizId',
   path: '/quizzes/$quizId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QQuizIdRoute = QQuizIdRouteImport.update({
+  id: '/q/$quizId',
+  path: '/q/$quizId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
+  '/q/$quizId': typeof QQuizIdRoute
   '/quizzes/$quizId': typeof QuizzesQuizIdRoute
   '/quizzes/create': typeof QuizzesCreateRoute
   '/quizzes/$quizId/edit': typeof QuizzesQuizIdEditRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
+  '/q/$quizId': typeof QQuizIdRoute
   '/quizzes/$quizId': typeof QuizzesQuizIdRoute
   '/quizzes/create': typeof QuizzesCreateRoute
   '/quizzes/$quizId/edit': typeof QuizzesQuizIdEditRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
+  '/q/$quizId': typeof QQuizIdRoute
   '/quizzes/$quizId': typeof QuizzesQuizIdRoute
   '/quizzes/create': typeof QuizzesCreateRoute
   '/quizzes/$quizId_/edit': typeof QuizzesQuizIdEditRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/q/$quizId'
     | '/quizzes/$quizId'
     | '/quizzes/create'
     | '/quizzes/$quizId/edit'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/q/$quizId'
     | '/quizzes/$quizId'
     | '/quizzes/create'
     | '/quizzes/$quizId/edit'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/_auth/register'
     | '/_auth/reset-password'
+    | '/q/$quizId'
     | '/quizzes/$quizId'
     | '/quizzes/create'
     | '/quizzes/$quizId_/edit'
@@ -159,6 +171,7 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   MyQuizzesRoute: typeof MyQuizzesRoute
   ProfileRoute: typeof ProfileRoute
+  QQuizIdRoute: typeof QQuizIdRoute
   QuizzesQuizIdRoute: typeof QuizzesQuizIdRoute
   QuizzesCreateRoute: typeof QuizzesCreateRoute
   QuizzesQuizIdEditRoute: typeof QuizzesQuizIdEditRoute
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/quizzes/$quizId'
       fullPath: '/quizzes/$quizId'
       preLoaderRoute: typeof QuizzesQuizIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/q/$quizId': {
+      id: '/q/$quizId'
+      path: '/q/$quizId'
+      fullPath: '/q/$quizId'
+      preLoaderRoute: typeof QQuizIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/reset-password': {
@@ -269,6 +289,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   MyQuizzesRoute: MyQuizzesRoute,
   ProfileRoute: ProfileRoute,
+  QQuizIdRoute: QQuizIdRoute,
   QuizzesQuizIdRoute: QuizzesQuizIdRoute,
   QuizzesCreateRoute: QuizzesCreateRoute,
   QuizzesQuizIdEditRoute: QuizzesQuizIdEditRoute,

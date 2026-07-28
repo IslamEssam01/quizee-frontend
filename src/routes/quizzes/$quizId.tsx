@@ -10,6 +10,7 @@ import { useQuiz, type AttemptSummary } from "@/hooks/useQuiz";
 import { useDeleteQuizMutation } from "@/hooks/useDeleteQuizMutation";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
     createFileRoute,
     Link,
@@ -144,10 +145,16 @@ function RouteComponent() {
                             Edit
                         </Button>
                     </Link>
-                    <Button variant="default">
-                        <Eye data-icon="inline-start" />
-                        Preview
-                    </Button>
+                    <Link
+                        to="/q/$quizId"
+                        params={{ quizId }}
+                        search={{ preview: true }}
+                    >
+                        <Button variant="default">
+                            <Eye data-icon="inline-start" />
+                            Preview
+                        </Button>
+                    </Link>
                     {isConfirmingDelete ? (
                         <>
                             <span className="text-sm text-muted-foreground">
@@ -216,14 +223,26 @@ function RouteComponent() {
                     <div className="flex items-center gap-2">
                         <InputField
                             readOnly
+                            disabled
                             value={shareableLink}
                             className="flex-1"
                         />
-                        <Button variant="outline">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                navigator.clipboard.writeText(shareableLink);
+                                toast.success("Link copied to clipboard!");
+                            }}
+                        >
                             <Copy data-icon="inline-start" />
                             Copy
                         </Button>
-                        <Button variant="outline">
+                        <Button
+                            variant="outline"
+                            onClick={() =>
+                                window.open(shareableLink, "_blank")
+                            }
+                        >
                             <ExternalLink data-icon="inline-start" />
                             Open
                         </Button>
@@ -241,8 +260,8 @@ function RouteComponent() {
                             No attempts yet. Share the link to get started.
                         </CardContent>
                     ) : (
-                        <CardContent className="flex flex-col gap-0 divide-y divide-border p-0">
-                            <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground">
+                        <CardContent className="flex flex-col gap-0 p-0">
+                            <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
                                 <span className="flex-1">Status</span>
                                 <span className="flex-1 text-center">
                                     Score
@@ -251,44 +270,46 @@ function RouteComponent() {
                                     Date
                                 </span>
                             </div>
-                            {attempts.map((attempt) => (
-                                <div
-                                    key={attempt.id}
-                                    className="flex items-center justify-between px-4 py-3 text-sm"
-                                >
-                                    <span className="flex-1">
-                                        <AttemptStatusBadge
-                                            attempt={attempt}
-                                        />
-                                    </span>
-                                    <span className="flex-1 text-center text-foreground">
-                                        {attempt.score !== null ? (
-                                            <>
-                                                {attempt.score}/
-                                                {totalQuestions}{" "}
+                            <div className="flex max-h-80 flex-col divide-y divide-border overflow-y-auto">
+                                {attempts.map((attempt) => (
+                                    <div
+                                        key={attempt.id}
+                                        className="flex items-center justify-between px-4 py-3 text-sm"
+                                    >
+                                        <span className="flex-1">
+                                            <AttemptStatusBadge
+                                                attempt={attempt}
+                                            />
+                                        </span>
+                                        <span className="flex-1 text-center text-foreground">
+                                            {attempt.score !== null ? (
+                                                <>
+                                                    {attempt.score}/
+                                                    {totalQuestions}{" "}
+                                                    <span className="text-muted-foreground">
+                                                        {Math.round(
+                                                            (attempt.score /
+                                                                totalQuestions) *
+                                                                100,
+                                                        )}
+                                                        %
+                                                    </span>
+                                                </>
+                                            ) : (
                                                 <span className="text-muted-foreground">
-                                                    {Math.round(
-                                                        (attempt.score /
-                                                            totalQuestions) *
-                                                            100,
-                                                    )}
-                                                    %
+                                                    —
                                                 </span>
-                                            </>
-                                        ) : (
-                                            <span className="text-muted-foreground">
-                                                —
-                                            </span>
-                                        )}
-                                    </span>
-                                    <span className="flex-1 text-right text-muted-foreground">
-                                        {formatDate(
-                                            attempt.taken_at ??
-                                                attempt.started_at,
-                                        )}
-                                    </span>
-                                </div>
-                            ))}
+                                            )}
+                                        </span>
+                                        <span className="flex-1 text-right text-muted-foreground">
+                                            {formatDate(
+                                                attempt.taken_at ??
+                                                    attempt.started_at,
+                                            )}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </CardContent>
                     )}
                 </Card>

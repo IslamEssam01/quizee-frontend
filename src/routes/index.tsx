@@ -69,7 +69,14 @@ function RouteComponent() {
                                         attempts
                                     </span>
                                 </div>
-                                <Button variant="default">Take quiz</Button>
+                                <Link
+                                    to="/q/$quizId"
+                                    params={{ quizId: String(quiz.id) }}
+                                >
+                                    <Button variant="default">
+                                        Take quiz
+                                    </Button>
+                                </Link>
                             </CardContent>
                         </Card>
                     ))}
