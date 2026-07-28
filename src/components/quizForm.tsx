@@ -8,6 +8,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { QuestionType, QuizQuestion } from "@/hooks/useQuiz";
 import { errorToast } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { QuizJsonEditor } from "@/components/quizJsonEditor";
+import type { QuizJsonPayload } from "@/lib/quizSchema";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -40,6 +42,51 @@ type QuizFormProps = {
     submitLabel: string;
     onSubmit: (payload: QuizFormPayload) => void;
 };
+
+function toJsonPayload(
+    title: string,
+    description: string,
+    passThreshold: number,
+    questions: QuestionDraft[],
+): QuizJsonPayload {
+    return {
+        title,
+        description,
+        pass_threshold: passThreshold,
+        questions: questions.map((question) => ({
+            text: question.text,
+            type: question.type,
+            answers: question.options.map((option) => ({
+                text: option.text,
+                is_correct: option.is_correct,
+            })),
+        })),
+    };
+}
+
+function toSubmitPayload(
+    title: string,
+    description: string,
+    passThreshold: number,
+    questions: QuestionDraft[],
+): QuizFormPayload {
+    return {
+        title,
+        description,
+        pass_threshold: passThreshold,
+        questions: questions.map((question, index) => ({
+            id: question.id,
+            text: question.text,
+            type: question.type,
+            position: index + 1,
+            answers: question.options.map((option) => ({
+                id: option.id,
+                text: option.text,
+                is_correct: option.is_correct,
+            })),
+        })),
+    };
+}
 
 function blankDraftQuestion(startId: number): {
     question: QuestionDraft;
@@ -123,6 +170,38 @@ export function QuizForm({
     }
 
     const isDisabled = isPending;
+
+    const [jsonError, setJsonError] = useState<string | null>(null);
+
+    const jsonValue = toJsonPayload(
+        title,
+        description,
+        passThreshold,
+        questions,
+    );
+
+    function applyJsonPayload(payload: QuizJsonPayload) {
+        setTitle(payload.title);
+        setDescription(payload.description);
+        setPassThreshold(payload.pass_threshold);
+        setQuestions(
+            payload.questions.map((question, index) => {
+                const existingQuestion = questions[index];
+                return {
+                    id: existingQuestion?.id ?? newId(),
+                    text: question.text,
+                    type: question.type,
+                    options: question.answers.map((answer, optionIndex) => ({
+                        id:
+                            existingQuestion?.options[optionIndex]?.id ??
+                            newId(),
+                        text: answer.text,
+                        is_correct: answer.is_correct,
+                    })),
+                };
+            }),
+        );
+    }
 
     function updateQuestion(
         id: number,
@@ -209,22 +288,9 @@ export function QuizForm({
             }
         }
 
-        onSubmit({
-            title,
-            description,
-            pass_threshold: passThreshold,
-            questions: questions.map((question, index) => ({
-                id: question.id,
-                text: question.text,
-                type: question.type,
-                position: index + 1,
-                answers: question.options.map((option) => ({
-                    id: option.id,
-                    text: option.text,
-                    is_correct: option.is_correct,
-                })),
-            })),
-        });
+        onSubmit(
+            toSubmitPayload(title, description, passThreshold, questions),
+        );
     }
 
     return (
@@ -297,6 +363,13 @@ export function QuizForm({
                     </div>
                 </CardContent>
             </Card>
+
+            <QuizJsonEditor
+                value={jsonValue}
+                onChange={applyJsonPayload}
+                onErrorChange={setJsonError}
+                disabled={isDisabled}
+            />
 
             <div className="flex flex-col gap-4">
                 <span className="text-xs font-semibold text-muted-foreground uppercase">
@@ -481,11 +554,17 @@ export function QuizForm({
 
             <Separator />
 
+            {jsonError && (
+                <span className="text-sm text-destructive">
+                    Fix the JSON editor error before submitting: {jsonError}
+                </span>
+            )}
+
             <Button
                 type="submit"
                 variant="default"
                 className="h-11 w-full text-sm font-medium"
-                disabled={isDisabled}
+                disabled={isDisabled || !!jsonError}
             >
                 <Check data-icon="inline-start" />
                 {submitLabel}
