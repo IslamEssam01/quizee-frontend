@@ -342,8 +342,6 @@ function RouteComponent() {
     const startAttemptMutation = useStartAttemptMutation(numericQuizId);
     const submitAttemptMutation = useSubmitAttemptMutation();
 
-    // When `preview` is set, wait for the quiz to load before deciding
-    // whether this is really an owner preview (no ambiguity otherwise).
     const ownershipResolved = !preview || quiz !== undefined;
 
     const hasAutoStarted = useRef(false);
@@ -355,19 +353,6 @@ function RouteComponent() {
             !hasAutoStarted.current
         ) {
             hasAutoStarted.current = true;
-            // Deferred via setTimeout (not called synchronously in the
-            // effect body): React StrictMode's dev-only mount -> effect ->
-            // cleanup -> effect double-invoke happens synchronously within
-            // this same tick. If mutate() ran synchronously here, the
-            // MutationObserver created by useMutation would lose all of its
-            // subscribers when StrictMode's simulated cleanup unsubscribes
-            // it, causing MutationObserver#onUnsubscribe to detach the
-            // observer from the in-flight mutation via removeObserver. The
-            // request still completes server-side, but the component never
-            // hears about it and is stuck rendering the pending/fallback
-            // state forever. Deferring past this tick lets the double-invoke
-            // settle first so the observer has a stable subscriber when the
-            // request resolves.
             setTimeout(() => {
                 startAttemptMutation.mutate(undefined);
             }, 0);

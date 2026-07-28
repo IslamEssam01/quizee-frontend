@@ -20,5 +20,4 @@ export const quizPayloadSchema = z.object({
 
 export type QuizJsonPayload = z.infer<typeof quizPayloadSchema>;
 
-// Use Zod v4's built-in toJSONSchema() method which works better with the current version
 export const quizJsonSchema = quizPayloadSchema.toJSONSchema();
