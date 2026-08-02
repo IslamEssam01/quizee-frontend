@@ -451,7 +451,7 @@ function RouteComponent() {
     const { quizId } = Route.useParams();
     const { preview } = Route.useSearch();
     const numericQuizId = Number(quizId);
-    const { currentUser } = useCurrentUser();
+    const { currentUser, isPending: isCurrentUserPending } = useCurrentUser();
     const { quiz } = useQuiz(numericQuizId);
     const navigate = useNavigate();
 
@@ -619,6 +619,14 @@ function RouteComponent() {
                     })
                 }
             />
+        );
+    }
+
+    if (isCurrentUserPending) {
+        return (
+            <div className="flex w-full justify-center py-20">
+                <Spinner className="size-6" />
+            </div>
         );
     }
 
