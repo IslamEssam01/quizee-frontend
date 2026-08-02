@@ -10,7 +10,11 @@ export function useSubmitAttemptMutation() {
             answers,
         }: {
             attemptId: number;
-            answers: { question_id: number; answer_id: number }[];
+            answers: {
+                question_id: number;
+                answer_id?: number;
+                answer_ids?: number[];
+            }[];
         }): Promise<SubmitAttemptResponse> =>
             fetchAPI(`/quizzes/submit-attempt/${attemptId}`, {
                 method: "POST",

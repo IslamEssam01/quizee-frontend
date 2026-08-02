@@ -3,10 +3,13 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export type QuestionType = "mcq" | "T OR F";
 
+export type GradingMode = "all_or_nothing" | "partial_credit";
+
 export type QuizAnswer = {
     id: number;
     text: string;
     is_correct: boolean;
+    points?: number;
 };
 
 export type QuizQuestion = {
@@ -14,6 +17,10 @@ export type QuizQuestion = {
     text: string;
     type: QuestionType;
     position: number;
+    points: number;
+    grading_mode: GradingMode;
+    penalty_per_wrong: number;
+    allow_multiple_answers: boolean;
     answers: QuizAnswer[];
 };
 
@@ -36,6 +43,7 @@ export type QuizDetail = {
     owner_id: number;
     questions: QuizQuestion[];
     attempts_count: number;
+    allow_negative_score: boolean;
     pass_rate?: number;
     attempts_summary?: AttemptSummary[];
 };

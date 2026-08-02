@@ -11,6 +11,7 @@ export function useCreateQuizMutation() {
             title: string;
             description: string;
             pass_threshold: number;
+            allow_negative_score: boolean;
             questions: QuizQuestion[];
         }): Promise<{ id: number }> =>
             fetchAPI("/quizzes", {

@@ -1,8 +1,9 @@
-import type { QuestionType } from "@/hooks/useQuiz";
+import type { GradingMode, QuestionType } from "@/hooks/useQuiz";
 
 export type AttemptQuestionOption = {
     id: number;
     text: string;
+    points?: number;
 };
 
 export type AttemptQuestion = {
@@ -10,6 +11,10 @@ export type AttemptQuestion = {
     text: string;
     type: QuestionType;
     position: number;
+    points: number;
+    grading_mode: GradingMode;
+    penalty_per_wrong: number;
+    allow_multiple_answers: boolean;
     answers: AttemptQuestionOption[];
 };
 
@@ -20,6 +25,7 @@ export type AttemptQuiz = {
     visibility: string;
     pass_threshold: number;
     owner_id: number;
+    allow_negative_score: boolean;
     questions: AttemptQuestion[];
 };
 
@@ -32,6 +38,7 @@ export type ReviewAnswer = {
     id: number;
     text: string;
     is_correct: boolean;
+    points?: number;
 };
 
 export type ReviewQuestion = {
@@ -39,6 +46,10 @@ export type ReviewQuestion = {
     text: string;
     type: QuestionType;
     position: number;
+    points: number;
+    grading_mode: GradingMode;
+    penalty_per_wrong: number;
+    allow_multiple_answers: boolean;
     answers: ReviewAnswer[];
 };
 
@@ -56,9 +67,12 @@ export type SubmitAttemptResponse = {
         visibility: string;
         pass_threshold: number;
         owner_id: number;
+        allow_negative_score: boolean;
         questions: ReviewQuestion[];
     };
-    answers_json: { question_id: number; answer_id: number }[] | null;
+    answers_json:
+        | { question_id: number; answer_id?: number; answer_ids?: number[] }[]
+        | null;
     score: number;
     passed: boolean;
 };

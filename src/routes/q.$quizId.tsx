@@ -3,12 +3,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { InputField } from "@/components/inputField";
 import { Spinner } from "@/components/ui/spinner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useQuiz } from "@/hooks/useQuiz";
 import { useStartAttemptMutation } from "@/hooks/useStartAttemptMutation";
 import { useSubmitAttemptMutation } from "@/hooks/useSubmitAttemptMutation";
 import type { QuestionType } from "@/hooks/useQuiz";
 import { cn } from "@/lib/utils";
+import {
+    calculateScore,
+    isPassed,
+    totalPoints,
+} from "@/lib/quizScoring";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -28,14 +34,22 @@ type TakingQuestion = {
     id: number;
     text: string;
     type: QuestionType;
+    allow_multiple_answers: boolean;
     answers: TakingOption[];
 };
 
-type ReviewOption = { id: number; text: string; is_correct: boolean };
+type ReviewOption = {
+    id: number;
+    text: string;
+    is_correct: boolean;
+    points?: number;
+};
 type ReviewQuestion = {
     id: number;
     text: string;
     type: QuestionType;
+    points: number;
+    grading_mode: "all_or_nothing" | "partial_credit";
     answers: ReviewOption[];
 };
 
@@ -72,7 +86,7 @@ function ResultsView({
     passThreshold: number;
     passed: boolean;
     questions: ReviewQuestion[];
-    selections: Record<number, number>;
+    selections: Record<number, number[]>;
     onRetake: () => void;
     onDone: () => void;
     doneLabel: string;
@@ -109,25 +123,69 @@ function ResultsView({
                     Review
                 </span>
                 {questions.map((question, index) => {
-                    const userAnswerId = selections[question.id];
-                    const correctAnswer = question.answers.find(
+                    const userAnswerIds = selections[question.id] ?? [];
+                    const correctAnswers = question.answers.filter(
                         (a) => a.is_correct,
                     );
-                    const userAnswer = question.answers.find(
-                        (a) => a.id === userAnswerId,
+                    const correctIds = new Set(
+                        correctAnswers.map((a) => a.id),
                     );
-                    const isCorrect =
-                        userAnswerId !== undefined &&
-                        userAnswerId === correctAnswer?.id;
+                    const userAnswers = question.answers.filter((a) =>
+                        userAnswerIds.includes(a.id),
+                    );
+
+                    const isFullyCorrect =
+                        userAnswerIds.length > 0 &&
+                        userAnswerIds.length === correctIds.size &&
+                        userAnswerIds.every((id) => correctIds.has(id));
+
+                    const showPartialCredit =
+                        question.grading_mode === "partial_credit" &&
+                        !isFullyCorrect;
+
+                    const wrongCount = userAnswerIds.filter(
+                        (id) => !correctIds.has(id),
+                    ).length;
+
+                    const awardedPoints = showPartialCredit
+                        ? (() => {
+                              if (wrongCount > 0) {
+                                  return 0;
+                              }
+                              const correctAnswersHavePoints =
+                                  correctAnswers.some(
+                                      (a) => a.points != null,
+                                  );
+                              if (correctAnswersHavePoints) {
+                                  return correctAnswers
+                                      .filter((a) =>
+                                          userAnswerIds.includes(a.id),
+                                      )
+                                      .reduce(
+                                          (sum, a) => sum + (a.points ?? 0),
+                                          0,
+                                      );
+                              }
+                              const correctCount = userAnswerIds.filter(
+                                  (id) => correctIds.has(id),
+                              ).length;
+                              return correctAnswers.length > 0
+                                  ? (correctCount / correctAnswers.length) *
+                                        question.points
+                                  : 0;
+                          })()
+                        : null;
 
                     return (
                         <div
                             key={question.id}
                             className={cn(
                                 "rounded-lg border-l-4 bg-card p-4",
-                                isCorrect
+                                isFullyCorrect
                                     ? "border-emerald-500"
-                                    : "border-destructive",
+                                    : showPartialCredit
+                                      ? "border-amber-500"
+                                      : "border-destructive",
                             )}
                         >
                             <div className="flex items-start justify-between gap-4">
@@ -137,30 +195,44 @@ function ResultsView({
                                 <span
                                     className={cn(
                                         "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                                        isCorrect
+                                        isFullyCorrect
                                             ? "bg-emerald-500/10 text-emerald-500"
-                                            : "bg-destructive/10 text-destructive",
+                                            : showPartialCredit
+                                              ? "bg-amber-500/10 text-amber-500"
+                                              : "bg-destructive/10 text-destructive",
                                     )}
                                 >
-                                    {isCorrect ? "Correct" : "Wrong"}
+                                    {isFullyCorrect
+                                        ? "Correct"
+                                        : showPartialCredit
+                                          ? `${awardedPoints} / ${question.points} pts`
+                                          : "Wrong"}
                                 </span>
                             </div>
-                            {isCorrect ? (
+                            {isFullyCorrect ? (
                                 <span className="text-sm text-emerald-500">
-                                    {userAnswer?.text}
+                                    {userAnswers
+                                        .map((a) => a.text)
+                                        .join(", ")}
                                 </span>
                             ) : (
                                 <div className="flex flex-col gap-0.5 text-sm">
                                     <span className="text-muted-foreground">
                                         Your answer:{" "}
                                         <span className="text-destructive">
-                                            {userAnswer?.text ?? "No answer"}
+                                            {userAnswers.length > 0
+                                                ? userAnswers
+                                                      .map((a) => a.text)
+                                                      .join(", ")
+                                                : "No answer"}
                                         </span>
                                     </span>
                                     <span className="text-muted-foreground">
                                         Correct:{" "}
                                         <span className="text-emerald-500">
-                                            {correctAnswer?.text}
+                                            {correctAnswers
+                                                .map((a) => a.text)
+                                                .join(", ")}
                                         </span>
                                     </span>
                                 </div>
@@ -206,16 +278,18 @@ function TakingView({
     questions: TakingQuestion[];
     currentIndex: number;
     setCurrentIndex: (updater: (prev: number) => number) => void;
-    selections: Record<number, number>;
+    selections: Record<number, number[]>;
     setSelections: (
-        updater: (prev: Record<number, number>) => Record<number, number>,
+        updater: (prev: Record<number, number[]>) => Record<number, number[]>,
     ) => void;
     onSubmit: () => void;
     isSubmitting: boolean;
 }) {
     const totalQuestions = questions.length;
     const question = questions[currentIndex];
-    const answeredCount = Object.keys(selections).length;
+    const answeredCount = Object.values(selections).filter(
+        (ids) => ids.length > 0,
+    ).length;
     const isLastQuestion = currentIndex === totalQuestions - 1;
 
     return (
@@ -251,36 +325,86 @@ function TakingView({
                     <p className="text-base font-medium text-foreground">
                         {question.text}
                     </p>
-                    <RadioGroup
-                        value={
-                            selections[question.id] !== undefined
-                                ? String(selections[question.id])
-                                : undefined
-                        }
-                        onValueChange={(value) =>
-                            setSelections((prev) => ({
-                                ...prev,
-                                [question.id]: Number(value as string),
-                            }))
-                        }
-                        className="flex flex-col gap-3"
-                    >
-                        {question.answers.map((option) => (
-                            <label
-                                key={option.id}
-                                className={cn(
-                                    "flex cursor-pointer items-center gap-3 rounded-lg border border-border px-4 py-3",
-                                    selections[question.id] === option.id &&
-                                        "border-primary bg-primary/5",
-                                )}
-                            >
-                                <RadioGroupItem value={String(option.id)} />
-                                <span className="text-sm text-foreground">
-                                    {option.text}
-                                </span>
-                            </label>
-                        ))}
-                    </RadioGroup>
+                    {question.allow_multiple_answers ? (
+                        <div className="flex flex-col gap-3">
+                            {question.answers.map((option) => {
+                                const checked =
+                                    selections[question.id]?.includes(
+                                        option.id,
+                                    ) ?? false;
+                                return (
+                                    <label
+                                        key={option.id}
+                                        className={cn(
+                                            "flex cursor-pointer items-center gap-3 rounded-lg border border-border px-4 py-3",
+                                            checked &&
+                                                "border-primary bg-primary/5",
+                                        )}
+                                    >
+                                        <Checkbox
+                                            checked={checked}
+                                            onCheckedChange={(next) =>
+                                                setSelections((prev) => {
+                                                    const current =
+                                                        prev[question.id] ?? [];
+                                                    const nextIds =
+                                                        next === true
+                                                            ? [
+                                                                  ...current,
+                                                                  option.id,
+                                                              ]
+                                                            : current.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      option.id,
+                                                              );
+                                                    return {
+                                                        ...prev,
+                                                        [question.id]: nextIds,
+                                                    };
+                                                })
+                                            }
+                                        />
+                                        <span className="text-sm text-foreground">
+                                            {option.text}
+                                        </span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <RadioGroup
+                            value={
+                                selections[question.id]?.[0] !== undefined
+                                    ? String(selections[question.id][0])
+                                    : undefined
+                            }
+                            onValueChange={(value) =>
+                                setSelections((prev) => ({
+                                    ...prev,
+                                    [question.id]: [Number(value as string)],
+                                }))
+                            }
+                            className="flex flex-col gap-3"
+                        >
+                            {question.answers.map((option) => (
+                                <label
+                                    key={option.id}
+                                    className={cn(
+                                        "flex cursor-pointer items-center gap-3 rounded-lg border border-border px-4 py-3",
+                                        selections[question.id]?.[0] ===
+                                            option.id &&
+                                            "border-primary bg-primary/5",
+                                    )}
+                                >
+                                    <RadioGroupItem value={String(option.id)} />
+                                    <span className="text-sm text-foreground">
+                                        {option.text}
+                                    </span>
+                                </label>
+                            ))}
+                        </RadioGroup>
+                    )}
                 </CardContent>
             </Card>
 
@@ -336,7 +460,7 @@ function RouteComponent() {
 
     const [takerName, setTakerName] = useState("");
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [selections, setSelections] = useState<Record<number, number>>({});
+    const [selections, setSelections] = useState<Record<number, number[]>>({});
     const [previewSubmitted, setPreviewSubmitted] = useState(false);
 
     const startAttemptMutation = useStartAttemptMutation(numericQuizId);
@@ -382,16 +506,30 @@ function RouteComponent() {
         }
 
         if (previewSubmitted) {
-            const total = quiz.questions.length;
-            const score = quiz.questions.reduce((count, question) => {
-                const chosen = selections[question.id];
-                const correct = question.answers.find((a) => a.is_correct);
-                return chosen !== undefined && chosen === correct?.id
-                    ? count + 1
-                    : count;
-            }, 0);
-            const passed =
-                total > 0 && (score / total) * 100 >= quiz.pass_threshold;
+            const scoringQuestions = quiz.questions.map((question) => ({
+                id: question.id,
+                points: question.points,
+                grading_mode: question.grading_mode,
+                penalty_per_wrong: question.penalty_per_wrong,
+                answers: question.answers,
+            }));
+            const scoringSelections = Object.entries(selections).map(
+                ([questionId, ids]) => ({
+                    question_id: Number(questionId),
+                    answer_ids: ids,
+                }),
+            );
+            const total = totalPoints(quiz.questions);
+            const score = calculateScore(
+                scoringQuestions,
+                scoringSelections,
+                quiz.allow_negative_score,
+            );
+            const passed = isPassed(
+                scoringQuestions,
+                score,
+                quiz.pass_threshold,
+            );
 
             return (
                 <ResultsView
@@ -435,7 +573,7 @@ function RouteComponent() {
             <ResultsView
                 title={result.quiz_json.title}
                 score={result.score}
-                total={result.quiz_json.questions.length}
+                total={totalPoints(result.quiz_json.questions)}
                 passThreshold={result.quiz_json.pass_threshold}
                 passed={result.passed}
                 questions={result.quiz_json.questions}
@@ -462,12 +600,22 @@ function RouteComponent() {
                 onSubmit={() =>
                     submitAttemptMutation.mutate({
                         attemptId: attempt.id,
-                        answers: Object.entries(selections).map(
-                            ([questionId, answerId]) => ({
-                                question_id: Number(questionId),
-                                answer_id: answerId,
+                        answers: Object.entries(selections)
+                            .filter(([, ids]) => ids.length > 0)
+                            .map(([questionId, ids]) => {
+                                const question = attempt.quiz.questions.find(
+                                    (q) => q.id === Number(questionId),
+                                );
+                                return question?.allow_multiple_answers
+                                    ? {
+                                          question_id: Number(questionId),
+                                          answer_ids: ids,
+                                      }
+                                    : {
+                                          question_id: Number(questionId),
+                                          answer_id: ids[0],
+                                      };
                             }),
-                        ),
                     })
                 }
             />

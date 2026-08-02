@@ -64,6 +64,7 @@ function RouteComponent() {
                 initialTitle={quiz.title}
                 initialDescription={quiz.description}
                 initialPassThreshold={quiz.pass_threshold}
+                initialAllowNegativeScore={quiz.allow_negative_score}
                 initialQuestions={quiz.questions}
                 isPending={updateQuizMutation.isPending}
                 submitLabel="Save & get link"

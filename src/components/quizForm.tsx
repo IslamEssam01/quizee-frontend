@@ -4,8 +4,8 @@ import { InputField } from "@/components/inputField";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { QuestionType, QuizQuestion } from "@/hooks/useQuiz";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { GradingMode, QuestionType, QuizQuestion } from "@/hooks/useQuiz";
 import { errorToast } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { QuizJsonEditor } from "@/components/quizJsonEditor";
@@ -17,12 +17,17 @@ type OptionDraft = {
     id: number;
     text: string;
     is_correct: boolean;
+    points?: number;
 };
 
 type QuestionDraft = {
     id: number;
     text: string;
     type: QuestionType;
+    points: number;
+    grading_mode: GradingMode;
+    penalty_per_wrong: number;
+    allow_multiple_answers: boolean;
     options: OptionDraft[];
 };
 
@@ -30,6 +35,7 @@ export type QuizFormPayload = {
     title: string;
     description: string;
     pass_threshold: number;
+    allow_negative_score: boolean;
     questions: QuizQuestion[];
 };
 
@@ -37,6 +43,7 @@ type QuizFormProps = {
     initialTitle?: string;
     initialDescription?: string;
     initialPassThreshold?: number;
+    initialAllowNegativeScore?: boolean;
     initialQuestions?: QuizQuestion[];
     isPending: boolean;
     submitLabel: string;
@@ -47,18 +54,25 @@ function toJsonPayload(
     title: string,
     description: string,
     passThreshold: number,
+    allowNegativeScore: boolean,
     questions: QuestionDraft[],
 ): QuizJsonPayload {
     return {
         title,
         description,
         pass_threshold: passThreshold,
+        allow_negative_score: allowNegativeScore,
         questions: questions.map((question) => ({
             text: question.text,
             type: question.type,
+            points: question.points,
+            grading_mode: question.grading_mode,
+            penalty_per_wrong: question.penalty_per_wrong,
+            allow_multiple_answers: question.allow_multiple_answers,
             answers: question.options.map((option) => ({
                 text: option.text,
                 is_correct: option.is_correct,
+                points: option.points,
             })),
         })),
     };
@@ -68,21 +82,28 @@ function toSubmitPayload(
     title: string,
     description: string,
     passThreshold: number,
+    allowNegativeScore: boolean,
     questions: QuestionDraft[],
 ): QuizFormPayload {
     return {
         title,
         description,
         pass_threshold: passThreshold,
+        allow_negative_score: allowNegativeScore,
         questions: questions.map((question, index) => ({
             id: question.id,
             text: question.text,
             type: question.type,
             position: index + 1,
+            points: question.points,
+            grading_mode: question.grading_mode,
+            penalty_per_wrong: question.penalty_per_wrong,
+            allow_multiple_answers: question.allow_multiple_answers,
             answers: question.options.map((option) => ({
                 id: option.id,
                 text: option.text,
                 is_correct: option.is_correct,
+                points: option.points,
             })),
         })),
     };
@@ -102,6 +123,10 @@ function blankDraftQuestion(startId: number): {
         id: id++,
         text: "",
         type: "mcq",
+        points: 1,
+        grading_mode: "all_or_nothing",
+        penalty_per_wrong: 0,
+        allow_multiple_answers: false,
         options,
     };
     return { question, lastId: id - 1 };
@@ -111,6 +136,7 @@ export function QuizForm({
     initialTitle = "",
     initialDescription = "",
     initialPassThreshold = 70,
+    initialAllowNegativeScore = true,
     initialQuestions,
     isPending,
     submitLabel,
@@ -122,10 +148,15 @@ export function QuizForm({
                   id: question.id,
                   text: question.text,
                   type: question.type,
+                  points: question.points,
+                  grading_mode: question.grading_mode,
+                  penalty_per_wrong: question.penalty_per_wrong,
+                  allow_multiple_answers: question.allow_multiple_answers,
                   options: question.answers.map((answer) => ({
                       id: answer.id,
                       text: answer.text,
                       is_correct: answer.is_correct,
+                      points: answer.points,
                   })),
               })),
               lastId: Math.max(
@@ -144,6 +175,9 @@ export function QuizForm({
     const [title, setTitle] = useState(initialTitle);
     const [description, setDescription] = useState(initialDescription);
     const [passThreshold, setPassThreshold] = useState(initialPassThreshold);
+    const [allowNegativeScore, setAllowNegativeScore] = useState(
+        initialAllowNegativeScore,
+    );
     const [questions, setQuestions] = useState<QuestionDraft[]>(
         initialDraft.questions,
     );
@@ -165,6 +199,10 @@ export function QuizForm({
             id: newId(),
             text: "",
             type: "mcq",
+            points: 1,
+            grading_mode: "all_or_nothing",
+            penalty_per_wrong: 0,
+            allow_multiple_answers: false,
             options: blankOptions(4),
         };
     }
@@ -177,6 +215,7 @@ export function QuizForm({
         title,
         description,
         passThreshold,
+        allowNegativeScore,
         questions,
     );
 
@@ -184,6 +223,7 @@ export function QuizForm({
         setTitle(payload.title);
         setDescription(payload.description);
         setPassThreshold(payload.pass_threshold);
+        setAllowNegativeScore(payload.allow_negative_score);
         setQuestions(
             payload.questions.map((question, index) => {
                 const existingQuestion = questions[index];
@@ -191,12 +231,17 @@ export function QuizForm({
                     id: existingQuestion?.id ?? newId(),
                     text: question.text,
                     type: question.type,
+                    points: question.points,
+                    grading_mode: question.grading_mode,
+                    penalty_per_wrong: question.penalty_per_wrong,
+                    allow_multiple_answers: question.allow_multiple_answers,
                     options: question.answers.map((answer, optionIndex) => ({
                         id:
                             existingQuestion?.options[optionIndex]?.id ??
                             newId(),
                         text: answer.text,
                         is_correct: answer.is_correct,
+                        points: answer.points,
                     })),
                 };
             }),
@@ -255,13 +300,60 @@ export function QuizForm({
         }));
     }
 
-    function setCorrectOption(questionId: number, optionId: number) {
+    function toggleCorrectOption(questionId: number, optionId: number) {
+        updateQuestion(questionId, (question) => {
+            const options = question.options.map((option) =>
+                option.id === optionId
+                    ? { ...option, is_correct: !option.is_correct }
+                    : option,
+            );
+            const correctCount = options.filter((o) => o.is_correct).length;
+            return {
+                ...question,
+                options,
+                allow_multiple_answers:
+                    correctCount > 1
+                        ? true
+                        : question.allow_multiple_answers,
+            };
+        });
+    }
+
+    function setQuestionPoints(id: number, points: number) {
+        updateQuestion(id, (question) => ({ ...question, points }));
+    }
+
+    function setQuestionGradingMode(id: number, gradingMode: GradingMode) {
+        updateQuestion(id, (question) => ({
+            ...question,
+            grading_mode: gradingMode,
+        }));
+    }
+
+    function setQuestionPenalty(id: number, penalty: number) {
+        updateQuestion(id, (question) => ({
+            ...question,
+            penalty_per_wrong: penalty,
+        }));
+    }
+
+    function setQuestionAllowMultiple(id: number, allowMultiple: boolean) {
+        updateQuestion(id, (question) => ({
+            ...question,
+            allow_multiple_answers: allowMultiple,
+        }));
+    }
+
+    function setOptionPoints(
+        questionId: number,
+        optionId: number,
+        points: number | undefined,
+    ) {
         updateQuestion(questionId, (question) => ({
             ...question,
-            options: question.options.map((option) => ({
-                ...option,
-                is_correct: option.id === optionId,
-            })),
+            options: question.options.map((option) =>
+                option.id === optionId ? { ...option, points } : option,
+            ),
         }));
     }
 
@@ -289,7 +381,13 @@ export function QuizForm({
         }
 
         onSubmit(
-            toSubmitPayload(title, description, passThreshold, questions),
+            toSubmitPayload(
+                title,
+                description,
+                passThreshold,
+                allowNegativeScore,
+                questions,
+            ),
         );
     }
 
@@ -360,6 +458,23 @@ export function QuizForm({
                         <span className="text-xs text-muted-foreground">
                             Minimum percentage score required to pass
                         </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="allow-negative-score"
+                            checked={allowNegativeScore}
+                            onCheckedChange={(checked) =>
+                                setAllowNegativeScore(checked === true)
+                            }
+                            disabled={isDisabled}
+                        />
+                        <label
+                            htmlFor="allow-negative-score"
+                            className="text-sm font-medium text-foreground"
+                        >
+                            Allow negative scores (penalties can take a
+                            taker's score below 0)
+                        </label>
                     </div>
                 </CardContent>
             </Card>
@@ -448,28 +563,117 @@ export function QuizForm({
                                 </button>
                             </div>
 
-                            <RadioGroup
-                                value={String(
-                                    question.options.find(
-                                        (o) => o.is_correct,
-                                    )?.id ?? "",
-                                )}
-                                onValueChange={(value) =>
-                                    setCorrectOption(
-                                        question.id,
-                                        Number(value as string),
-                                    )
-                                }
-                                className="flex flex-col gap-2"
-                            >
+                            <div className="flex flex-wrap items-end gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-medium text-muted-foreground">
+                                        Points
+                                    </label>
+                                    <InputField
+                                        type="number"
+                                        min={0.01}
+                                        step="any"
+                                        value={question.points}
+                                        onChange={(e) =>
+                                            setQuestionPoints(
+                                                question.id,
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                        disabled={isDisabled}
+                                        className="w-24"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-medium text-muted-foreground">
+                                        Penalty per wrong answer
+                                    </label>
+                                    <InputField
+                                        type="number"
+                                        min={0}
+                                        step="any"
+                                        value={question.penalty_per_wrong}
+                                        onChange={(e) =>
+                                            setQuestionPenalty(
+                                                question.id,
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                        disabled={isDisabled}
+                                        className="w-24"
+                                    />
+                                </div>
+                                <div className="inline-flex w-fit items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
+                                    <button
+                                        type="button"
+                                        disabled={isDisabled}
+                                        onClick={() =>
+                                            setQuestionGradingMode(
+                                                question.id,
+                                                "all_or_nothing",
+                                            )
+                                        }
+                                        className={cn(
+                                            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                                            question.grading_mode ===
+                                                "all_or_nothing"
+                                                ? "bg-card text-foreground"
+                                                : "text-muted-foreground hover:text-foreground",
+                                        )}
+                                    >
+                                        All or nothing
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={isDisabled}
+                                        onClick={() =>
+                                            setQuestionGradingMode(
+                                                question.id,
+                                                "partial_credit",
+                                            )
+                                        }
+                                        className={cn(
+                                            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                                            question.grading_mode ===
+                                                "partial_credit"
+                                                ? "bg-card text-foreground"
+                                                : "text-muted-foreground hover:text-foreground",
+                                        )}
+                                    >
+                                        Partial credit
+                                    </button>
+                                </div>
+                                <label className="flex items-center gap-2 text-sm text-foreground">
+                                    <Checkbox
+                                        checked={
+                                            question.allow_multiple_answers
+                                        }
+                                        onCheckedChange={(checked) =>
+                                            setQuestionAllowMultiple(
+                                                question.id,
+                                                checked === true,
+                                            )
+                                        }
+                                        disabled={isDisabled}
+                                    />
+                                    Allow multiple correct answers
+                                </label>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
                                 {question.type === "T OR F"
                                     ? question.options.map((option) => (
                                           <label
                                               key={option.id}
                                               className="flex items-center gap-2 text-sm text-foreground"
                                           >
-                                              <RadioGroupItem
-                                                  value={String(option.id)}
+                                              <Checkbox
+                                                  checked={option.is_correct}
+                                                  onCheckedChange={() =>
+                                                      toggleCorrectOption(
+                                                          question.id,
+                                                          option.id,
+                                                      )
+                                                  }
                                                   disabled={isDisabled}
                                               />
                                               {option.text}
@@ -481,10 +685,16 @@ export function QuizForm({
                                                   key={option.id}
                                                   className="flex items-center gap-2"
                                               >
-                                                  <RadioGroupItem
-                                                      value={String(
-                                                          option.id,
-                                                      )}
+                                                  <Checkbox
+                                                      checked={
+                                                          option.is_correct
+                                                      }
+                                                      onCheckedChange={() =>
+                                                          toggleCorrectOption(
+                                                              question.id,
+                                                              option.id,
+                                                          )
+                                                      }
                                                       disabled={isDisabled}
                                                   />
                                                   <InputField
@@ -501,6 +711,38 @@ export function QuizForm({
                                                       disabled={isDisabled}
                                                       className="flex-1"
                                                   />
+                                                  {question.grading_mode ===
+                                                      "partial_credit" && (
+                                                      <InputField
+                                                          type="number"
+                                                          min={0}
+                                                          step="any"
+                                                          placeholder="pts"
+                                                          value={
+                                                              option.points ??
+                                                              ""
+                                                          }
+                                                          onChange={(e) =>
+                                                              setOptionPoints(
+                                                                  question.id,
+                                                                  option.id,
+                                                                  e.target
+                                                                      .value ===
+                                                                      ""
+                                                                      ? undefined
+                                                                      : Number(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        ),
+                                                              )
+                                                          }
+                                                          disabled={
+                                                              isDisabled
+                                                          }
+                                                          className="w-16"
+                                                      />
+                                                  )}
                                                   <Button
                                                       type="button"
                                                       variant="ghost"
@@ -523,7 +765,7 @@ export function QuizForm({
                                               </div>
                                           ),
                                       )}
-                            </RadioGroup>
+                            </div>
 
                             {question.type === "mcq" && (
                                 <button

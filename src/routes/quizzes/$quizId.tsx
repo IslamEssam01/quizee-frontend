@@ -7,6 +7,7 @@ import {
     useCurrentUser,
 } from "@/hooks/useCurrentUser";
 import { useQuiz, type AttemptSummary } from "@/hooks/useQuiz";
+import { totalPoints } from "@/lib/quizScoring";
 import { useDeleteQuizMutation } from "@/hooks/useDeleteQuizMutation";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -114,6 +115,7 @@ function RouteComponent() {
 
     const shareableLink = `${window.location.origin}/q/${quiz.id}`;
     const totalQuestions = quiz.questions.length;
+    const totalScorePoints = totalPoints(quiz.questions);
     const attempts = quiz.attempts_summary ?? [];
 
     return (
@@ -291,13 +293,15 @@ function RouteComponent() {
                                             {attempt.score !== null ? (
                                                 <>
                                                     {attempt.score}/
-                                                    {totalQuestions}{" "}
+                                                    {totalScorePoints}{" "}
                                                     <span className="text-muted-foreground">
-                                                        {Math.round(
-                                                            (attempt.score /
-                                                                totalQuestions) *
-                                                                100,
-                                                        )}
+                                                        {totalScorePoints > 0
+                                                            ? Math.round(
+                                                                  (attempt.score /
+                                                                      totalScorePoints) *
+                                                                      100,
+                                                              )
+                                                            : 0}
                                                         %
                                                     </span>
                                                 </>
