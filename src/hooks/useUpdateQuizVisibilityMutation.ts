@@ -2,31 +2,24 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { errorToast } from "@/lib/utils";
 import { toast } from "sonner";
 import { fetchAPI } from "@/lib/auth";
-import type { QuizQuestion } from "@/hooks/useQuiz";
+import { quizQueryOptions } from "@/hooks/useQuiz";
 
-export function useCreateQuizMutation() {
+export function useUpdateQuizVisibilityMutation(quizId: number) {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (quizData: {
-            title: string;
-            description: string;
-            pass_threshold: number;
-            allow_negative_score: boolean;
-            questions: QuizQuestion[];
-            visibility?: "public" | "private";
-        }): Promise<{ id: number }> =>
-            fetchAPI("/quizzes", {
-                method: "POST",
+        mutationFn: (payload: { visibility: "public" | "private" }) =>
+            fetchAPI(`/quizzes/${quizId}`, {
+                method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    ...quizData,
-                    visibility: quizData.visibility ?? "public",
-                }),
+                body: JSON.stringify(payload),
             }),
         onSuccess: async () => {
-            toast.success("Quiz created successfully!");
+            toast.success("Visibility updated!");
+            await queryClient.invalidateQueries({
+                queryKey: quizQueryOptions(quizId).queryKey,
+            });
             await queryClient.invalidateQueries({
                 queryKey: ["myQuizzes"],
             });

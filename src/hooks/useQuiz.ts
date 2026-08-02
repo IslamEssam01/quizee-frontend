@@ -34,11 +34,25 @@ export type AttemptSummary = {
     passed: boolean | null;
 };
 
+export type QuizAccessUser = {
+    id: number;
+    username: string;
+    email: string;
+};
+
+export type QuizAccessEntry = {
+    quiz_id: number;
+    user_id: number;
+    user: QuizAccessUser;
+    granted_at: string;
+    granted_by: number;
+};
+
 export type QuizDetail = {
     id: number;
     title: string;
     description: string;
-    visibility: string;
+    visibility: "public" | "private";
     pass_threshold: number;
     owner_id: number;
     questions: QuizQuestion[];
@@ -46,6 +60,7 @@ export type QuizDetail = {
     allow_negative_score: boolean;
     pass_rate?: number;
     attempts_summary?: AttemptSummary[];
+    quiz_access?: QuizAccessEntry[];
 };
 
 export function quizQueryOptions(quizId: number) {

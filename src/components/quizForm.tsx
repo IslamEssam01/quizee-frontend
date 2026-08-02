@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { GradingMode, QuestionType, QuizQuestion } from "@/hooks/useQuiz";
 import { errorToast } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export type QuizFormPayload = {
     pass_threshold: number;
     allow_negative_score: boolean;
     questions: QuizQuestion[];
+    visibility?: "public" | "private";
 };
 
 type QuizFormProps = {
@@ -45,6 +47,8 @@ type QuizFormProps = {
     initialPassThreshold?: number;
     initialAllowNegativeScore?: boolean;
     initialQuestions?: QuizQuestion[];
+    showVisibilityToggle?: boolean;
+    initialVisibility?: "public" | "private";
     isPending: boolean;
     submitLabel: string;
     onSubmit: (payload: QuizFormPayload) => void;
@@ -84,12 +88,14 @@ function toSubmitPayload(
     passThreshold: number,
     allowNegativeScore: boolean,
     questions: QuestionDraft[],
+    visibility: "public" | "private" | undefined,
 ): QuizFormPayload {
     return {
         title,
         description,
         pass_threshold: passThreshold,
         allow_negative_score: allowNegativeScore,
+        visibility,
         questions: questions.map((question, index) => ({
             id: question.id,
             text: question.text,
@@ -138,6 +144,8 @@ export function QuizForm({
     initialPassThreshold = 70,
     initialAllowNegativeScore = true,
     initialQuestions,
+    showVisibilityToggle = false,
+    initialVisibility = "public",
     isPending,
     submitLabel,
     onSubmit,
@@ -177,6 +185,9 @@ export function QuizForm({
     const [passThreshold, setPassThreshold] = useState(initialPassThreshold);
     const [allowNegativeScore, setAllowNegativeScore] = useState(
         initialAllowNegativeScore,
+    );
+    const [visibility, setVisibility] = useState<"public" | "private">(
+        initialVisibility,
     );
     const [questions, setQuestions] = useState<QuestionDraft[]>(
         initialDraft.questions,
@@ -387,6 +398,7 @@ export function QuizForm({
                 passThreshold,
                 allowNegativeScore,
                 questions,
+                showVisibilityToggle ? visibility : undefined,
             ),
         );
     }
@@ -476,6 +488,45 @@ export function QuizForm({
                             taker's score below 0)
                         </label>
                     </div>
+                    {showVisibilityToggle && (
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-medium text-foreground">
+                                Visibility
+                            </span>
+                            <RadioGroup
+                                value={visibility}
+                                onValueChange={(value) =>
+                                    setVisibility(
+                                        value as "public" | "private",
+                                    )
+                                }
+                                className="flex items-center gap-4"
+                            >
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <RadioGroupItem
+                                        value="public"
+                                        disabled={isDisabled}
+                                    />
+                                    <span className="text-sm text-foreground">
+                                        Public
+                                    </span>
+                                </label>
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <RadioGroupItem
+                                        value="private"
+                                        disabled={isDisabled}
+                                    />
+                                    <span className="text-sm text-foreground">
+                                        Private
+                                    </span>
+                                </label>
+                            </RadioGroup>
+                            <span className="text-xs text-muted-foreground">
+                                Private quizzes are only visible to you and
+                                people you grant access to
+                            </span>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

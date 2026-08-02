@@ -47,6 +47,7 @@ function RouteComponent() {
             </div>
 
             <QuizForm
+                showVisibilityToggle
                 isPending={createQuizMutation.isPending}
                 submitLabel="Save & get link"
                 onSubmit={(payload) => {
