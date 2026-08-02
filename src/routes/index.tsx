@@ -54,7 +54,7 @@ function RouteComponent() {
                                     {quiz.description}
                                 </span>
                             </CardHeader>
-                            <CardContent className="flex items-center justify-between">
+                            <CardContent className="mt-auto flex items-center justify-between">
                                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                     <span>
                                         <span className="font-semibold text-foreground">
@@ -73,9 +73,7 @@ function RouteComponent() {
                                     to="/q/$quizId"
                                     params={{ quizId: String(quiz.id) }}
                                 >
-                                    <Button variant="default">
-                                        Take quiz
-                                    </Button>
+                                    <Button variant="default">Take quiz</Button>
                                 </Link>
                             </CardContent>
                         </Card>
