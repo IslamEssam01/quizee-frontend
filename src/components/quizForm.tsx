@@ -38,7 +38,7 @@ export type QuizFormPayload = {
     pass_threshold: number;
     allow_negative_score: boolean;
     questions: QuizQuestion[];
-    visibility?: "public" | "private";
+    visibility?: "public" | "private" | "public_with_link";
 };
 
 type QuizFormProps = {
@@ -48,7 +48,7 @@ type QuizFormProps = {
     initialAllowNegativeScore?: boolean;
     initialQuestions?: QuizQuestion[];
     showVisibilityToggle?: boolean;
-    initialVisibility?: "public" | "private";
+    initialVisibility?: "public" | "private" | "public_with_link";
     isPending: boolean;
     submitLabel: string;
     onSubmit: (payload: QuizFormPayload) => void;
@@ -88,7 +88,7 @@ function toSubmitPayload(
     passThreshold: number,
     allowNegativeScore: boolean,
     questions: QuestionDraft[],
-    visibility: "public" | "private" | undefined,
+    visibility: "public" | "private" | "public_with_link" | undefined,
 ): QuizFormPayload {
     return {
         title,
@@ -186,9 +186,9 @@ export function QuizForm({
     const [allowNegativeScore, setAllowNegativeScore] = useState(
         initialAllowNegativeScore,
     );
-    const [visibility, setVisibility] = useState<"public" | "private">(
-        initialVisibility,
-    );
+    const [visibility, setVisibility] = useState<
+        "public" | "private" | "public_with_link"
+    >(initialVisibility);
     const [questions, setQuestions] = useState<QuestionDraft[]>(
         initialDraft.questions,
     );
@@ -497,7 +497,10 @@ export function QuizForm({
                                 value={visibility}
                                 onValueChange={(value) =>
                                     setVisibility(
-                                        value as "public" | "private",
+                                        value as
+                                            | "public"
+                                            | "private"
+                                            | "public_with_link",
                                     )
                                 }
                                 className="flex items-center gap-4"
@@ -513,6 +516,15 @@ export function QuizForm({
                                 </label>
                                 <label className="flex cursor-pointer items-center gap-2">
                                     <RadioGroupItem
+                                        value="public_with_link"
+                                        disabled={isDisabled}
+                                    />
+                                    <span className="text-sm text-foreground">
+                                        Public with link
+                                    </span>
+                                </label>
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <RadioGroupItem
                                         value="private"
                                         disabled={isDisabled}
                                     />
@@ -522,6 +534,8 @@ export function QuizForm({
                                 </label>
                             </RadioGroup>
                             <span className="text-xs text-muted-foreground">
+                                Public with link quizzes are hidden from
+                                listings but viewable by anyone with the link.
                                 Private quizzes are only visible to you and
                                 people you grant access to
                             </span>

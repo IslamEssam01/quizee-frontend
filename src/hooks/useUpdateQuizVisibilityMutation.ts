@@ -7,7 +7,9 @@ import { quizQueryOptions } from "@/hooks/useQuiz";
 export function useUpdateQuizVisibilityMutation(quizId: number) {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (payload: { visibility: "public" | "private" }) =>
+        mutationFn: (payload: {
+            visibility: "public" | "private" | "public_with_link";
+        }) =>
             fetchAPI(`/quizzes/${quizId}`, {
                 method: "PATCH",
                 headers: {

@@ -52,7 +52,7 @@ export type QuizDetail = {
     id: number;
     title: string;
     description: string;
-    visibility: "public" | "private";
+    visibility: "public" | "private" | "public_with_link";
     pass_threshold: number;
     owner_id: number;
     questions: QuizQuestion[];

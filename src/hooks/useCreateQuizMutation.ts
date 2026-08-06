@@ -13,7 +13,7 @@ export function useCreateQuizMutation() {
             pass_threshold: number;
             allow_negative_score: boolean;
             questions: QuizQuestion[];
-            visibility?: "public" | "private";
+            visibility?: "public" | "private" | "public_with_link";
         }): Promise<{ id: number }> =>
             fetchAPI("/quizzes", {
                 method: "POST",

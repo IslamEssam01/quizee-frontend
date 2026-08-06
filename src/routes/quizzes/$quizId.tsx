@@ -469,7 +469,8 @@ function RouteComponent() {
                                     updateVisibilityMutation.mutate({
                                         visibility: value as
                                             | "public"
-                                            | "private",
+                                            | "private"
+                                            | "public_with_link",
                                     })
                                 }
                                 className="flex items-center gap-4"
@@ -483,6 +484,17 @@ function RouteComponent() {
                                     />
                                     <span className="text-sm text-foreground">
                                         Public
+                                    </span>
+                                </label>
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <RadioGroupItem
+                                        value="public_with_link"
+                                        disabled={
+                                            updateVisibilityMutation.isPending
+                                        }
+                                    />
+                                    <span className="text-sm text-foreground">
+                                        Public with link
                                     </span>
                                 </label>
                                 <label className="flex cursor-pointer items-center gap-2">
