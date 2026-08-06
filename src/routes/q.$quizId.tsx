@@ -7,7 +7,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useQuiz } from "@/hooks/useQuiz";
 import { useStartAttemptMutation } from "@/hooks/useStartAttemptMutation";
+import { useResumeAttemptMutation } from "@/hooks/useResumeAttemptMutation";
+import { useUpdateAttemptMutation } from "@/hooks/useUpdateAttemptMutation";
 import { useSubmitAttemptMutation } from "@/hooks/useSubmitAttemptMutation";
+import type { AttemptAnswerPayload, AttemptQuestion } from "@/hooks/useAttempt";
 import type { QuestionType } from "@/hooks/useQuiz";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +18,7 @@ import {
     isPassed,
     totalPoints,
 } from "@/lib/quizScoring";
+import { ResultsView } from "@/components/quizResultsView";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +26,24 @@ import { z } from "zod";
 
 const takeQuizSearchSchema = z.object({
     preview: z.boolean().optional(),
+    attemptId: z.number().optional(),
 });
+
+function buildAnswersPayload(
+    selections: Record<number, number[]>,
+    questions: AttemptQuestion[],
+): AttemptAnswerPayload[] {
+    return Object.entries(selections)
+        .filter(([, ids]) => ids.length > 0)
+        .map(([questionId, ids]) => {
+            const question = questions.find(
+                (q) => q.id === Number(questionId),
+            );
+            return question?.allow_multiple_answers
+                ? { question_id: Number(questionId), answer_ids: ids }
+                : { question_id: Number(questionId), answer_id: ids[0] };
+        });
+}
 
 export const Route = createFileRoute("/q/$quizId")({
     component: RouteComponent,
@@ -37,230 +58,6 @@ type TakingQuestion = {
     allow_multiple_answers: boolean;
     answers: TakingOption[];
 };
-
-type ReviewOption = {
-    id: number;
-    text: string;
-    is_correct: boolean;
-    points?: number;
-};
-type ReviewQuestion = {
-    id: number;
-    text: string;
-    type: QuestionType;
-    points: number;
-    grading_mode: "all_or_nothing" | "partial_credit";
-    answers: ReviewOption[];
-};
-
-function ResultBadge({ passed }: { passed: boolean }) {
-    return (
-        <span
-            className={cn(
-                "w-fit rounded-full px-2 py-0.5 text-xs font-medium",
-                passed
-                    ? "bg-emerald-500/10 text-emerald-500"
-                    : "bg-destructive/10 text-destructive",
-            )}
-        >
-            {passed ? "Passed" : "Failed"}
-        </span>
-    );
-}
-
-function ResultsView({
-    title,
-    score,
-    total,
-    passThreshold,
-    passed,
-    questions,
-    selections,
-    onRetake,
-    onDone,
-    doneLabel,
-}: {
-    title: string;
-    score: number;
-    total: number;
-    passThreshold: number;
-    passed: boolean;
-    questions: ReviewQuestion[];
-    selections: Record<number, number[]>;
-    onRetake: () => void;
-    onDone: () => void;
-    doneLabel: string;
-}) {
-    const percent = total > 0 ? Math.round((score / total) * 100) : 0;
-
-    return (
-        <div className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-10 sm:px-6">
-            <Card>
-                <CardContent className="flex flex-col items-center gap-2 py-8">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase">
-                        {title}
-                    </span>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-foreground">
-                            {score}
-                        </span>
-                        <span className="text-lg text-muted-foreground">
-                            /{total}
-                        </span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                        {percent}% correct
-                    </span>
-                    <ResultBadge passed={passed} />
-                    <span className="text-xs text-muted-foreground">
-                        Pass threshold: {passThreshold}%
-                    </span>
-                </CardContent>
-            </Card>
-
-            <div className="flex flex-col gap-3">
-                <span className="text-xs font-semibold text-muted-foreground uppercase">
-                    Review
-                </span>
-                {questions.map((question, index) => {
-                    const userAnswerIds = selections[question.id] ?? [];
-                    const correctAnswers = question.answers.filter(
-                        (a) => a.is_correct,
-                    );
-                    const correctIds = new Set(
-                        correctAnswers.map((a) => a.id),
-                    );
-                    const userAnswers = question.answers.filter((a) =>
-                        userAnswerIds.includes(a.id),
-                    );
-
-                    const isFullyCorrect =
-                        userAnswerIds.length > 0 &&
-                        userAnswerIds.length === correctIds.size &&
-                        userAnswerIds.every((id) => correctIds.has(id));
-
-                    const showPartialCredit =
-                        question.grading_mode === "partial_credit" &&
-                        !isFullyCorrect;
-
-                    const wrongCount = userAnswerIds.filter(
-                        (id) => !correctIds.has(id),
-                    ).length;
-
-                    const awardedPoints = showPartialCredit
-                        ? (() => {
-                              if (wrongCount > 0) {
-                                  return 0;
-                              }
-                              const correctAnswersHavePoints =
-                                  correctAnswers.some(
-                                      (a) => a.points != null,
-                                  );
-                              if (correctAnswersHavePoints) {
-                                  return correctAnswers
-                                      .filter((a) =>
-                                          userAnswerIds.includes(a.id),
-                                      )
-                                      .reduce(
-                                          (sum, a) => sum + (a.points ?? 0),
-                                          0,
-                                      );
-                              }
-                              const correctCount = userAnswerIds.filter(
-                                  (id) => correctIds.has(id),
-                              ).length;
-                              return correctAnswers.length > 0
-                                  ? (correctCount / correctAnswers.length) *
-                                        question.points
-                                  : 0;
-                          })()
-                        : null;
-
-                    return (
-                        <div
-                            key={question.id}
-                            className={cn(
-                                "rounded-lg border-l-4 bg-card p-4",
-                                isFullyCorrect
-                                    ? "border-emerald-500"
-                                    : showPartialCredit
-                                      ? "border-amber-500"
-                                      : "border-destructive",
-                            )}
-                        >
-                            <div className="flex items-start justify-between gap-4">
-                                <span className="text-sm font-medium text-foreground">
-                                    {index + 1}. {question.text}
-                                </span>
-                                <span
-                                    className={cn(
-                                        "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                                        isFullyCorrect
-                                            ? "bg-emerald-500/10 text-emerald-500"
-                                            : showPartialCredit
-                                              ? "bg-amber-500/10 text-amber-500"
-                                              : "bg-destructive/10 text-destructive",
-                                    )}
-                                >
-                                    {isFullyCorrect
-                                        ? "Correct"
-                                        : showPartialCredit
-                                          ? `${awardedPoints} / ${question.points} pts`
-                                          : "Wrong"}
-                                </span>
-                            </div>
-                            {isFullyCorrect ? (
-                                <span className="text-sm text-emerald-500">
-                                    {userAnswers
-                                        .map((a) => a.text)
-                                        .join(", ")}
-                                </span>
-                            ) : (
-                                <div className="flex flex-col gap-0.5 text-sm">
-                                    <span className="text-muted-foreground">
-                                        Your answer:{" "}
-                                        <span className="text-destructive">
-                                            {userAnswers.length > 0
-                                                ? userAnswers
-                                                      .map((a) => a.text)
-                                                      .join(", ")
-                                                : "No answer"}
-                                        </span>
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        Correct:{" "}
-                                        <span className="text-emerald-500">
-                                            {correctAnswers
-                                                .map((a) => a.text)
-                                                .join(", ")}
-                                        </span>
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-
-            <div className="flex items-center gap-3">
-                <Button
-                    variant="outline"
-                    className="h-11 flex-1"
-                    onClick={onRetake}
-                >
-                    Retake quiz
-                </Button>
-                <Button
-                    variant="default"
-                    className="h-11 flex-1"
-                    onClick={onDone}
-                >
-                    {doneLabel}
-                </Button>
-            </div>
-        </div>
-    );
-}
 
 function TakingView({
     title,
@@ -449,7 +246,7 @@ function TakingView({
 
 function RouteComponent() {
     const { quizId } = Route.useParams();
-    const { preview } = Route.useSearch();
+    const { preview, attemptId } = Route.useSearch();
     const numericQuizId = Number(quizId);
     const { currentUser, isPending: isCurrentUserPending } = useCurrentUser();
     const { quiz } = useQuiz(numericQuizId);
@@ -457,19 +254,37 @@ function RouteComponent() {
 
     const isPreview =
         !!preview && !!currentUser && quiz?.owner_id === currentUser.id;
+    const isResuming = !!attemptId;
 
     const [takerName, setTakerName] = useState("");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selections, setSelections] = useState<Record<number, number[]>>({});
     const [previewSubmitted, setPreviewSubmitted] = useState(false);
+    const [resumedAnswersLoaded, setResumedAnswersLoaded] = useState(false);
 
     const startAttemptMutation = useStartAttemptMutation(numericQuizId);
+    const resumeAttemptMutation = useResumeAttemptMutation();
+    const updateAttemptMutation = useUpdateAttemptMutation();
     const submitAttemptMutation = useSubmitAttemptMutation();
+
+    const attempt = isResuming
+        ? resumeAttemptMutation.data
+        : startAttemptMutation.data;
+    const answersInitialized = isResuming ? resumedAnswersLoaded : !!attempt;
 
     const ownershipResolved = !preview || quiz !== undefined;
 
     const hasAutoStarted = useRef(false);
     useEffect(() => {
+        if (isResuming) {
+            if (currentUser && !hasAutoStarted.current) {
+                hasAutoStarted.current = true;
+                setTimeout(() => {
+                    resumeAttemptMutation.mutate(attemptId);
+                }, 0);
+            }
+            return;
+        }
         if (
             currentUser &&
             ownershipResolved &&
@@ -481,16 +296,79 @@ function RouteComponent() {
                 startAttemptMutation.mutate(undefined);
             }, 0);
         }
-    }, [currentUser, ownershipResolved, isPreview, startAttemptMutation]);
+    }, [
+        currentUser,
+        ownershipResolved,
+        isPreview,
+        isResuming,
+        attemptId,
+        startAttemptMutation,
+        resumeAttemptMutation,
+    ]);
+
+    // When resuming, load any previously saved answers once the attempt exists.
+    const hasLoadedAnswers = useRef(false);
+    useEffect(() => {
+        if (!attempt || !isResuming || hasLoadedAnswers.current) {
+            return;
+        }
+        hasLoadedAnswers.current = true;
+        updateAttemptMutation.mutate(
+            { attemptId: attempt.id },
+            {
+                onSuccess: (data) => {
+                    const loaded: Record<number, number[]> = {};
+                    for (const answer of data.answers_json ?? []) {
+                        loaded[answer.question_id] = answer.answer_ids ??
+                            (answer.answer_id !== undefined
+                                ? [answer.answer_id]
+                                : []);
+                    }
+                    setSelections(loaded);
+                    setResumedAnswersLoaded(true);
+                },
+            },
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [attempt, isResuming]);
+
+    // Autosave: persist answers to the attempt every time a selection changes.
+    useEffect(() => {
+        if (
+            !answersInitialized ||
+            !attempt ||
+            submitAttemptMutation.data ||
+            isPreview
+        ) {
+            return;
+        }
+        updateAttemptMutation.mutate({
+            attemptId: attempt.id,
+            answers: buildAnswersPayload(selections, attempt.quiz.questions),
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selections]);
 
     function resetAndRetake() {
         setCurrentIndex(0);
         setSelections({});
+        setResumedAnswersLoaded(false);
         if (isPreview) {
             setPreviewSubmitted(false);
             return;
         }
         submitAttemptMutation.reset();
+        if (isResuming) {
+            hasAutoStarted.current = false;
+            hasLoadedAnswers.current = false;
+            resumeAttemptMutation.reset();
+            navigate({
+                to: "/q/$quizId",
+                params: { quizId },
+                search: { attemptId: undefined },
+            });
+            return;
+        }
         startAttemptMutation.mutate(takerName || undefined);
     }
 
@@ -585,8 +463,7 @@ function RouteComponent() {
         );
     }
 
-    const attempt = startAttemptMutation.data;
-    if (attempt) {
+    if (attempt && answersInitialized) {
         return (
             <TakingView
                 title={attempt.quiz.title}
@@ -600,22 +477,10 @@ function RouteComponent() {
                 onSubmit={() =>
                     submitAttemptMutation.mutate({
                         attemptId: attempt.id,
-                        answers: Object.entries(selections)
-                            .filter(([, ids]) => ids.length > 0)
-                            .map(([questionId, ids]) => {
-                                const question = attempt.quiz.questions.find(
-                                    (q) => q.id === Number(questionId),
-                                );
-                                return question?.allow_multiple_answers
-                                    ? {
-                                          question_id: Number(questionId),
-                                          answer_ids: ids,
-                                      }
-                                    : {
-                                          question_id: Number(questionId),
-                                          answer_id: ids[0],
-                                      };
-                            }),
+                        answers: buildAnswersPayload(
+                            selections,
+                            attempt.quiz.questions,
+                        ),
                     })
                 }
             />
@@ -631,6 +496,13 @@ function RouteComponent() {
     }
 
     if (!currentUser) {
+        if (isResuming) {
+            return (
+                <div className="flex w-full justify-center py-20">
+                    <Spinner className="size-6" />
+                </div>
+            );
+        }
         return (
             <div className="mx-auto flex max-w-md flex-col gap-8 px-4 py-24 sm:px-6">
                 <div className="flex flex-col gap-1">
@@ -689,7 +561,23 @@ function RouteComponent() {
         );
     }
 
-    if (startAttemptMutation.isError) {
+    if (isResuming && resumeAttemptMutation.isError) {
+        return (
+            <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center sm:px-6">
+                <span className="text-sm text-muted-foreground">
+                    {resumeAttemptMutation.error.message}
+                </span>
+                <Button
+                    variant="outline"
+                    onClick={() => resumeAttemptMutation.mutate(attemptId)}
+                >
+                    Try again
+                </Button>
+            </div>
+        );
+    }
+
+    if (!isResuming && startAttemptMutation.isError) {
         return (
             <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center sm:px-6">
                 <span className="text-sm text-muted-foreground">

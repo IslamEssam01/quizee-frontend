@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MyQuizzesRouteImport } from './routes/my-quizzes'
+import { Route as MyAttemptsRouteImport } from './routes/my-attempts'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as QuizzesCreateRouteImport } from './routes/quizzes/create'
@@ -30,6 +31,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const MyQuizzesRoute = MyQuizzesRouteImport.update({
   id: '/my-quizzes',
   path: '/my-quizzes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyAttemptsRoute = MyAttemptsRouteImport.update({
+  id: '/my-attempts',
+  path: '/my-attempts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -84,6 +90,7 @@ const QuizzesQuizIdEditRoute = QuizzesQuizIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/my-attempts': typeof MyAttemptsRoute
   '/my-quizzes': typeof MyQuizzesRoute
   '/profile': typeof ProfileRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/my-attempts': typeof MyAttemptsRoute
   '/my-quizzes': typeof MyQuizzesRoute
   '/profile': typeof ProfileRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
+  '/my-attempts': typeof MyAttemptsRoute
   '/my-quizzes': typeof MyQuizzesRoute
   '/profile': typeof ProfileRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/my-attempts'
     | '/my-quizzes'
     | '/profile'
     | '/forgot-password'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/my-attempts'
     | '/my-quizzes'
     | '/profile'
     | '/forgot-password'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/my-attempts'
     | '/my-quizzes'
     | '/profile'
     | '/_auth/forgot-password'
@@ -169,6 +181,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  MyAttemptsRoute: typeof MyAttemptsRoute
   MyQuizzesRoute: typeof MyQuizzesRoute
   ProfileRoute: typeof ProfileRoute
   QQuizIdRoute: typeof QQuizIdRoute
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       path: '/my-quizzes'
       fullPath: '/my-quizzes'
       preLoaderRoute: typeof MyQuizzesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-attempts': {
+      id: '/my-attempts'
+      path: '/my-attempts'
+      fullPath: '/my-attempts'
+      preLoaderRoute: typeof MyAttemptsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -287,6 +307,7 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  MyAttemptsRoute: MyAttemptsRoute,
   MyQuizzesRoute: MyQuizzesRoute,
   ProfileRoute: ProfileRoute,
   QQuizIdRoute: QQuizIdRoute,

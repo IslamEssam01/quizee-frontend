@@ -29,9 +29,17 @@ export type AttemptQuiz = {
     questions: AttemptQuestion[];
 };
 
-export type StartAttemptResponse = {
+export type AttemptResponse = {
     id: number;
     quiz: AttemptQuiz;
+};
+
+export type StartAttemptResponse = AttemptResponse;
+
+export type AttemptAnswerPayload = {
+    question_id: number;
+    answer_id?: number;
+    answer_ids?: number[];
 };
 
 export type ReviewAnswer = {
@@ -70,9 +78,55 @@ export type SubmitAttemptResponse = {
         allow_negative_score: boolean;
         questions: ReviewQuestion[];
     };
-    answers_json:
-        | { question_id: number; answer_id?: number; answer_ids?: number[] }[]
-        | null;
+    answers_json: AttemptAnswerPayload[] | null;
     score: number;
     passed: boolean;
+};
+
+export type UpdateAttemptResponse = {
+    id: number;
+    quiz_id: number;
+    user_id: number | null;
+    taker_name: string | null;
+    started_at: string;
+    quiz_json: {
+        id: number;
+        title: string;
+        description: string;
+        visibility: string;
+        pass_threshold: number;
+        owner_id: number;
+        allow_negative_score: boolean;
+        questions: ReviewQuestion[];
+    };
+    answers_json: AttemptAnswerPayload[] | null;
+};
+
+export type UserAttempt = {
+    id: number;
+    quiz_id: number;
+    user_id: number;
+    started_at: string;
+    taken_at: string | null;
+    quiz_json: {
+        id: number;
+        title: string;
+        description: string;
+        visibility: string;
+        pass_threshold: number;
+        owner_id: number;
+        allow_negative_score: boolean;
+        questions: ReviewQuestion[];
+    } | null;
+    answers_json: AttemptAnswerPayload[] | null;
+    score: number | null;
+    passed: boolean | null;
+};
+
+export type PaginatedUserAttemptResponse = {
+    attempts: UserAttempt[];
+    skip: number;
+    limit: number;
+    total: number;
+    has_more: boolean;
 };

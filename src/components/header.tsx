@@ -31,6 +31,16 @@ export default function Header() {
                             </Button>
                         </Link>
                     )}
+                    {currentUser && (
+                        <Link to="/my-attempts">
+                            <Button
+                                variant="ghost"
+                                className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                My Attempts
+                            </Button>
+                        </Link>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon-lg"
