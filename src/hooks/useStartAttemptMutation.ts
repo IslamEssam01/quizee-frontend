@@ -6,7 +6,7 @@ import type { StartAttemptResponse } from "@/hooks/useAttempt";
 export function useStartAttemptMutation(quizId: number) {
     return useMutation({
         mutationFn: (takerName?: string): Promise<StartAttemptResponse> =>
-            fetchAPI(`/quizzes/${quizId}/start-attempt`, {
+            fetchAPI(`/quizzes/${quizId}/attempts`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

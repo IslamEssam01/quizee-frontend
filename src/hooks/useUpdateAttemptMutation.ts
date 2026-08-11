@@ -14,7 +14,7 @@ export function useUpdateAttemptMutation() {
             attemptId: number;
             answers?: AttemptAnswerPayload[];
         }): Promise<UpdateAttemptResponse> =>
-            fetchAPI(`/quizzes/update-attempt/${attemptId}`, {
+            fetchAPI(`/quizzes/attempts/${attemptId}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",

@@ -16,7 +16,7 @@ export function useSubmitAttemptMutation() {
                 answer_ids?: number[];
             }[];
         }): Promise<SubmitAttemptResponse> =>
-            fetchAPI(`/quizzes/submit-attempt/${attemptId}`, {
+            fetchAPI(`/quizzes/attempts/submit/${attemptId}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

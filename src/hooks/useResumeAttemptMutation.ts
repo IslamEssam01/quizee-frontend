@@ -6,7 +6,7 @@ import type { AttemptResponse } from "@/hooks/useAttempt";
 export function useResumeAttemptMutation() {
     return useMutation({
         mutationFn: (attemptId: number): Promise<AttemptResponse> =>
-            fetchAPI(`/quizzes/resume-attempt/${attemptId}`, {
+            fetchAPI(`/quizzes/attempts/resume/${attemptId}`, {
                 method: "POST",
             }),
         onError: (error: Error) => {
