@@ -38,6 +38,8 @@ export type QuizFormPayload = {
     pass_threshold: number;
     allow_negative_score: boolean;
     grade_tiers: Record<string, number> | null;
+    randomize_questions: boolean;
+    randomize_answers: boolean;
     questions: QuizQuestion[];
     visibility?: "public" | "private" | "public_with_link";
 };
@@ -54,6 +56,8 @@ type QuizFormProps = {
     initialPassThreshold?: number;
     initialAllowNegativeScore?: boolean;
     initialGradeTiers?: Record<string, number> | null;
+    initialRandomizeQuestions?: boolean;
+    initialRandomizeAnswers?: boolean;
     initialQuestions?: QuizQuestion[];
     showVisibilityToggle?: boolean;
     initialVisibility?: "public" | "private" | "public_with_link";
@@ -90,6 +94,8 @@ function toJsonPayload(
     passThreshold: number,
     allowNegativeScore: boolean,
     gradeTiers: Record<string, number> | null,
+    randomizeQuestions: boolean,
+    randomizeAnswers: boolean,
     questions: QuestionDraft[],
 ): QuizJsonPayload {
     return {
@@ -98,6 +104,8 @@ function toJsonPayload(
         pass_threshold: passThreshold,
         allow_negative_score: allowNegativeScore,
         grade_tiers: gradeTiers,
+        randomize_questions: randomizeQuestions,
+        randomize_answers: randomizeAnswers,
         questions: questions.map((question) => ({
             text: question.text,
             type: question.type,
@@ -120,6 +128,8 @@ function toSubmitPayload(
     passThreshold: number,
     allowNegativeScore: boolean,
     gradeTiers: Record<string, number> | null,
+    randomizeQuestions: boolean,
+    randomizeAnswers: boolean,
     questions: QuestionDraft[],
     visibility: "public" | "private" | "public_with_link" | undefined,
 ): QuizFormPayload {
@@ -129,6 +139,8 @@ function toSubmitPayload(
         pass_threshold: passThreshold,
         allow_negative_score: allowNegativeScore,
         grade_tiers: gradeTiers,
+        randomize_questions: randomizeQuestions,
+        randomize_answers: randomizeAnswers,
         visibility,
         questions: questions.map((question, index) => ({
             id: question.id,
@@ -178,6 +190,8 @@ export function QuizForm({
     initialPassThreshold = 70,
     initialAllowNegativeScore = true,
     initialGradeTiers = null,
+    initialRandomizeQuestions = false,
+    initialRandomizeAnswers = false,
     initialQuestions,
     showVisibilityToggle = false,
     initialVisibility = "public",
@@ -220,6 +234,12 @@ export function QuizForm({
     const [passThreshold, setPassThreshold] = useState(initialPassThreshold);
     const [allowNegativeScore, setAllowNegativeScore] = useState(
         initialAllowNegativeScore,
+    );
+    const [randomizeQuestions, setRandomizeQuestions] = useState(
+        initialRandomizeQuestions,
+    );
+    const [randomizeAnswers, setRandomizeAnswers] = useState(
+        initialRandomizeAnswers,
     );
     const initialGradeTierDraft = gradeTiersToDraft(initialGradeTiers, 1);
     const [gradeTiers, setGradeTiers] = useState<GradeTierDraft[]>(
@@ -292,6 +312,8 @@ export function QuizForm({
         passThreshold,
         allowNegativeScore,
         draftToGradeTiers(gradeTiers),
+        randomizeQuestions,
+        randomizeAnswers,
         questions,
     );
 
@@ -300,6 +322,8 @@ export function QuizForm({
         setDescription(payload.description);
         setPassThreshold(payload.pass_threshold);
         setAllowNegativeScore(payload.allow_negative_score);
+        setRandomizeQuestions(payload.randomize_questions);
+        setRandomizeAnswers(payload.randomize_answers);
         setGradeTiers(
             Object.entries(payload.grade_tiers ?? {}).map(
                 ([name, threshold]) => ({
@@ -482,6 +506,8 @@ export function QuizForm({
                 passThreshold,
                 allowNegativeScore,
                 draftToGradeTiers(gradeTiers),
+                randomizeQuestions,
+                randomizeAnswers,
                 questions,
                 showVisibilityToggle ? visibility : undefined,
             ),
@@ -571,6 +597,38 @@ export function QuizForm({
                         >
                             Allow negative scores (penalties can take a
                             taker's score below 0)
+                        </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="randomize-questions"
+                            checked={randomizeQuestions}
+                            onCheckedChange={(checked) =>
+                                setRandomizeQuestions(checked === true)
+                            }
+                            disabled={isDisabled}
+                        />
+                        <label
+                            htmlFor="randomize-questions"
+                            className="text-sm font-medium text-foreground"
+                        >
+                            Randomize question order for each attempt
+                        </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="randomize-answers"
+                            checked={randomizeAnswers}
+                            onCheckedChange={(checked) =>
+                                setRandomizeAnswers(checked === true)
+                            }
+                            disabled={isDisabled}
+                        />
+                        <label
+                            htmlFor="randomize-answers"
+                            className="text-sm font-medium text-foreground"
+                        >
+                            Randomize answer order for each attempt
                         </label>
                     </div>
                     <div className="flex flex-col gap-2">

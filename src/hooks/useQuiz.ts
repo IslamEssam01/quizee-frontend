@@ -59,6 +59,8 @@ export type QuizDetail = {
     attempts_count: number;
     allow_negative_score: boolean;
     grade_tiers: Record<string, number> | null;
+    randomize_questions: boolean;
+    randomize_answers: boolean;
     pass_rate?: number;
     attempts_summary?: AttemptSummary[];
     quiz_access?: QuizAccessEntry[];

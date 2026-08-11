@@ -9,6 +9,7 @@ import {
 import { useQuiz, type AttemptSummary } from "@/hooks/useQuiz";
 import { totalPoints } from "@/lib/quizScoring";
 import { useDeleteQuizMutation } from "@/hooks/useDeleteQuizMutation";
+import { useDuplicateQuizMutation } from "@/hooks/useDuplicateQuizMutation";
 import { queryClient } from "@/lib/queryClient";
 import { cn, errorToast } from "@/lib/utils";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import {
 import {
     ChevronLeft,
     Copy,
+    CopyPlus,
     Eye,
     ExternalLink,
     Pencil,
@@ -289,6 +291,7 @@ function RouteComponent() {
     const { currentUser } = useCurrentUser();
     const { quiz, isPending } = useQuiz(Number(quizId));
     const deleteQuizMutation = useDeleteQuizMutation(Number(quizId));
+    const duplicateQuizMutation = useDuplicateQuizMutation(Number(quizId));
     const updateVisibilityMutation = useUpdateQuizVisibilityMutation(
         Number(quizId),
     );
@@ -345,6 +348,29 @@ function RouteComponent() {
                             Edit
                         </Button>
                     </Link>
+                    <Button
+                        variant="outline"
+                        disabled={duplicateQuizMutation.isPending}
+                        onClick={() =>
+                            duplicateQuizMutation.mutate(undefined, {
+                                onSuccess: (newQuiz) => {
+                                    navigate({
+                                        to: "/quizzes/$quizId",
+                                        params: {
+                                            quizId: String(newQuiz.id),
+                                        },
+                                    });
+                                },
+                            })
+                        }
+                    >
+                        {duplicateQuizMutation.isPending ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <CopyPlus data-icon="inline-start" />
+                        )}
+                        Duplicate
+                    </Button>
                     <Link
                         to="/q/$quizId"
                         params={{ quizId }}

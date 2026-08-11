@@ -13,6 +13,8 @@ export function useUpdateQuizMutation(quizId: number) {
             pass_threshold: number;
             allow_negative_score: boolean;
             grade_tiers: Record<string, number> | null;
+            randomize_questions: boolean;
+            randomize_answers: boolean;
             questions: QuizQuestion[];
         }) =>
             fetchAPI(`/quizzes/${quizId}`, {
