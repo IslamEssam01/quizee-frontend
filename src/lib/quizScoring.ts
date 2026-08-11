@@ -78,3 +78,22 @@ export function isPassed(
     if (total === 0) return false;
     return (score / total) * 100 >= passThreshold;
 }
+
+export function calculateGrade(
+    questions: { points: number }[],
+    score: number,
+    gradeTiers: Record<string, number> | null | undefined,
+): string | null {
+    if (!gradeTiers) return null;
+    const total = totalPoints(questions);
+    if (total === 0) return null;
+    const percent = (score / total) * 100;
+
+    const tiers = Object.entries(gradeTiers).sort((a, b) => b[1] - a[1]);
+    for (const [grade, threshold] of tiers) {
+        if (percent >= threshold) {
+            return grade;
+        }
+    }
+    return null;
+}

@@ -26,6 +26,7 @@ export type AttemptQuiz = {
     pass_threshold: number;
     owner_id: number;
     allow_negative_score: boolean;
+    grade_tiers: Record<string, number> | null;
     questions: AttemptQuestion[];
 };
 
@@ -76,11 +77,13 @@ export type SubmitAttemptResponse = {
         pass_threshold: number;
         owner_id: number;
         allow_negative_score: boolean;
+        grade_tiers: Record<string, number> | null;
         questions: ReviewQuestion[];
     };
     answers_json: AttemptAnswerPayload[] | null;
     score: number;
     passed: boolean;
+    grade: string | null;
 };
 
 export type UpdateAttemptResponse = {
@@ -97,6 +100,7 @@ export type UpdateAttemptResponse = {
         pass_threshold: number;
         owner_id: number;
         allow_negative_score: boolean;
+        grade_tiers: Record<string, number> | null;
         questions: ReviewQuestion[];
     };
     answers_json: AttemptAnswerPayload[] | null;
@@ -116,11 +120,13 @@ export type UserAttempt = {
         pass_threshold: number;
         owner_id: number;
         allow_negative_score: boolean;
+        grade_tiers: Record<string, number> | null;
         questions: ReviewQuestion[];
     } | null;
     answers_json: AttemptAnswerPayload[] | null;
     score: number | null;
     passed: boolean | null;
+    grade: string | null;
 };
 
 export type PaginatedUserAttemptResponse = {

@@ -14,6 +14,7 @@ import type { AttemptAnswerPayload, AttemptQuestion } from "@/hooks/useAttempt";
 import type { QuestionType } from "@/hooks/useQuiz";
 import { cn } from "@/lib/utils";
 import {
+    calculateGrade,
     calculateScore,
     isPassed,
     totalPoints,
@@ -408,6 +409,11 @@ function RouteComponent() {
                 score,
                 quiz.pass_threshold,
             );
+            const grade = calculateGrade(
+                quiz.questions,
+                score,
+                quiz.grade_tiers,
+            );
 
             return (
                 <ResultsView
@@ -416,6 +422,7 @@ function RouteComponent() {
                     total={total}
                     passThreshold={quiz.pass_threshold}
                     passed={passed}
+                    grade={grade}
                     questions={quiz.questions}
                     selections={selections}
                     onRetake={resetAndRetake}
@@ -454,6 +461,7 @@ function RouteComponent() {
                 total={totalPoints(result.quiz_json.questions)}
                 passThreshold={result.quiz_json.pass_threshold}
                 passed={result.passed}
+                grade={result.grade}
                 questions={result.quiz_json.questions}
                 selections={selections}
                 onRetake={resetAndRetake}

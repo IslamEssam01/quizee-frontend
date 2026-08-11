@@ -43,6 +43,7 @@ export function ResultsView({
     total,
     passThreshold,
     passed,
+    grade,
     questions,
     selections,
     onRetake,
@@ -54,6 +55,7 @@ export function ResultsView({
     total: number;
     passThreshold: number;
     passed: boolean;
+    grade?: string | null;
     questions: ReviewQuestion[];
     selections: Record<number, number[]>;
     onRetake?: () => void;
@@ -80,7 +82,14 @@ export function ResultsView({
                     <span className="text-sm text-muted-foreground">
                         {percent}% correct
                     </span>
-                    <ResultBadge passed={passed} />
+                    <div className="flex items-center gap-2">
+                        <ResultBadge passed={passed} />
+                        {grade && (
+                            <span className="w-fit rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                Grade: {grade}
+                            </span>
+                        )}
+                    </div>
                     <span className="text-xs text-muted-foreground">
                         Pass threshold: {passThreshold}%
                     </span>

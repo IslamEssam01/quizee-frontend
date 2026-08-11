@@ -38,6 +38,7 @@ export const quizPayloadSchema = z.object({
     description: z.string(),
     pass_threshold: z.number().min(1).max(100),
     allow_negative_score: z.boolean().default(true),
+    grade_tiers: z.record(z.string().max(20), z.number().min(0).max(100)).nullable().optional(),
     questions: z.array(quizQuestionSchema).min(1),
 });
 

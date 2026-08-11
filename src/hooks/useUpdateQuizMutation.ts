@@ -12,6 +12,7 @@ export function useUpdateQuizMutation(quizId: number) {
             description: string;
             pass_threshold: number;
             allow_negative_score: boolean;
+            grade_tiers: Record<string, number> | null;
             questions: QuizQuestion[];
         }) =>
             fetchAPI(`/quizzes/${quizId}`, {

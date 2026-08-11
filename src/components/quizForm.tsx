@@ -37,8 +37,15 @@ export type QuizFormPayload = {
     description: string;
     pass_threshold: number;
     allow_negative_score: boolean;
+    grade_tiers: Record<string, number> | null;
     questions: QuizQuestion[];
     visibility?: "public" | "private" | "public_with_link";
+};
+
+type GradeTierDraft = {
+    id: number;
+    name: string;
+    threshold: number;
 };
 
 type QuizFormProps = {
@@ -46,6 +53,7 @@ type QuizFormProps = {
     initialDescription?: string;
     initialPassThreshold?: number;
     initialAllowNegativeScore?: boolean;
+    initialGradeTiers?: Record<string, number> | null;
     initialQuestions?: QuizQuestion[];
     showVisibilityToggle?: boolean;
     initialVisibility?: "public" | "private" | "public_with_link";
@@ -54,11 +62,34 @@ type QuizFormProps = {
     onSubmit: (payload: QuizFormPayload) => void;
 };
 
+function gradeTiersToDraft(
+    gradeTiers: Record<string, number> | null | undefined,
+    startId: number,
+): { tiers: GradeTierDraft[]; lastId: number } {
+    let id = startId;
+    const tiers = Object.entries(gradeTiers ?? {}).map(([name, threshold]) => ({
+        id: id++,
+        name,
+        threshold,
+    }));
+    return { tiers, lastId: id - 1 };
+}
+
+function draftToGradeTiers(
+    tiers: GradeTierDraft[],
+): Record<string, number> | null {
+    const entries = tiers
+        .map((tier) => [tier.name.trim(), tier.threshold] as const)
+        .filter(([name]) => name.length > 0);
+    return entries.length > 0 ? Object.fromEntries(entries) : null;
+}
+
 function toJsonPayload(
     title: string,
     description: string,
     passThreshold: number,
     allowNegativeScore: boolean,
+    gradeTiers: Record<string, number> | null,
     questions: QuestionDraft[],
 ): QuizJsonPayload {
     return {
@@ -66,6 +97,7 @@ function toJsonPayload(
         description,
         pass_threshold: passThreshold,
         allow_negative_score: allowNegativeScore,
+        grade_tiers: gradeTiers,
         questions: questions.map((question) => ({
             text: question.text,
             type: question.type,
@@ -87,6 +119,7 @@ function toSubmitPayload(
     description: string,
     passThreshold: number,
     allowNegativeScore: boolean,
+    gradeTiers: Record<string, number> | null,
     questions: QuestionDraft[],
     visibility: "public" | "private" | "public_with_link" | undefined,
 ): QuizFormPayload {
@@ -95,6 +128,7 @@ function toSubmitPayload(
         description,
         pass_threshold: passThreshold,
         allow_negative_score: allowNegativeScore,
+        grade_tiers: gradeTiers,
         visibility,
         questions: questions.map((question, index) => ({
             id: question.id,
@@ -143,6 +177,7 @@ export function QuizForm({
     initialDescription = "",
     initialPassThreshold = 70,
     initialAllowNegativeScore = true,
+    initialGradeTiers = null,
     initialQuestions,
     showVisibilityToggle = false,
     initialVisibility = "public",
@@ -186,6 +221,35 @@ export function QuizForm({
     const [allowNegativeScore, setAllowNegativeScore] = useState(
         initialAllowNegativeScore,
     );
+    const initialGradeTierDraft = gradeTiersToDraft(initialGradeTiers, 1);
+    const [gradeTiers, setGradeTiers] = useState<GradeTierDraft[]>(
+        initialGradeTierDraft.tiers,
+    );
+    const nextGradeTierId = useRef(initialGradeTierDraft.lastId + 1);
+    function newGradeTierId() {
+        return nextGradeTierId.current++;
+    }
+    function addGradeTier() {
+        setGradeTiers((prev) => [
+            ...prev,
+            { id: newGradeTierId(), name: "", threshold: 0 },
+        ]);
+    }
+    function removeGradeTier(id: number) {
+        setGradeTiers((prev) => prev.filter((tier) => tier.id !== id));
+    }
+    function updateGradeTierName(id: number, name: string) {
+        setGradeTiers((prev) =>
+            prev.map((tier) => (tier.id === id ? { ...tier, name } : tier)),
+        );
+    }
+    function updateGradeTierThreshold(id: number, threshold: number) {
+        setGradeTiers((prev) =>
+            prev.map((tier) =>
+                tier.id === id ? { ...tier, threshold } : tier,
+            ),
+        );
+    }
     const [visibility, setVisibility] = useState<
         "public" | "private" | "public_with_link"
     >(initialVisibility);
@@ -227,6 +291,7 @@ export function QuizForm({
         description,
         passThreshold,
         allowNegativeScore,
+        draftToGradeTiers(gradeTiers),
         questions,
     );
 
@@ -235,6 +300,15 @@ export function QuizForm({
         setDescription(payload.description);
         setPassThreshold(payload.pass_threshold);
         setAllowNegativeScore(payload.allow_negative_score);
+        setGradeTiers(
+            Object.entries(payload.grade_tiers ?? {}).map(
+                ([name, threshold]) => ({
+                    id: newGradeTierId(),
+                    name,
+                    threshold,
+                }),
+            ),
+        );
         setQuestions(
             payload.questions.map((question, index) => {
                 const existingQuestion = questions[index];
@@ -391,12 +465,23 @@ export function QuizForm({
             }
         }
 
+        for (const tier of gradeTiers) {
+            if (!tier.name.trim()) continue;
+            if (tier.threshold < 0 || tier.threshold > 100) {
+                errorToast(
+                    `Grade tier "${tier.name}" threshold must be between 0 and 100`,
+                );
+                return;
+            }
+        }
+
         onSubmit(
             toSubmitPayload(
                 title,
                 description,
                 passThreshold,
                 allowNegativeScore,
+                draftToGradeTiers(gradeTiers),
                 questions,
                 showVisibilityToggle ? visibility : undefined,
             ),
@@ -487,6 +572,72 @@ export function QuizForm({
                             Allow negative scores (penalties can take a
                             taker's score below 0)
                         </label>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-foreground">
+                            Grade tiers (optional)
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                            Label score ranges (e.g. "A" at 90%). Highest
+                            matching threshold wins.
+                        </span>
+                        {gradeTiers.map((tier) => (
+                            <div
+                                key={tier.id}
+                                className="flex items-center gap-2"
+                            >
+                                <InputField
+                                    value={tier.name}
+                                    placeholder="Grade name"
+                                    onChange={(e) =>
+                                        updateGradeTierName(
+                                            tier.id,
+                                            e.target.value,
+                                        )
+                                    }
+                                    maxLength={20}
+                                    disabled={isDisabled}
+                                    className="flex-1"
+                                />
+                                <InputField
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step="any"
+                                    value={tier.threshold}
+                                    onChange={(e) =>
+                                        updateGradeTierThreshold(
+                                            tier.id,
+                                            Number(e.target.value),
+                                        )
+                                    }
+                                    disabled={isDisabled}
+                                    className="w-24"
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                    %
+                                </span>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    disabled={isDisabled}
+                                    onClick={() => removeGradeTier(tier.id)}
+                                >
+                                    <Trash2 />
+                                </Button>
+                            </div>
+                        ))}
+                        <button
+                            type="button"
+                            disabled={isDisabled}
+                            onClick={addGradeTier}
+                            className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                        >
+                            <Plus className="size-4" />
+                            Add grade tier
+                        </button>
                     </div>
                     {showVisibilityToggle && (
                         <div className="flex flex-col gap-2">

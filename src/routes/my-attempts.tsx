@@ -104,6 +104,11 @@ function AttemptRow({
                             {totalPoints(attempt.quiz_json.questions)}
                         </span>
                     )}
+                    {isSubmitted && attempt.grade && (
+                        <span className="w-fit rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            Grade: {attempt.grade}
+                        </span>
+                    )}
                 </div>
             </div>
             {isSubmitted ? (
@@ -162,6 +167,7 @@ function RouteComponent() {
                 total={totalPoints(viewedAttempt.quiz_json.questions)}
                 passThreshold={viewedAttempt.quiz_json.pass_threshold}
                 passed={viewedAttempt.passed}
+                grade={viewedAttempt.grade}
                 questions={viewedAttempt.quiz_json.questions}
                 selections={selections}
                 onDone={() => setViewedAttempt(null)}
